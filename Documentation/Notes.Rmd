@@ -1,0 +1,446 @@
+---
+title: "Notes"
+bibliography: References/References.bib
+---
+
+```{r message=F, include=F}
+library(dplyr); library(sf)
+knitr::opts_chunk$set(echo=F)
+```
+
+# Shared by Miriam
+
+  - [Nursing home cost report RHCF](https://health.data.ny.gov/Health/Nursing-Home-Cost-Report-RHCF-2017/ac8d-d23d).  
+  - 
+  
+  
+## [$672 million would be const of one-time COVID-19 testing for all assisted living and nursing home residents, staff, AHCA/NCAL says](https://www.mcknightsseniorliving.com/home/news/672-million-would-be-cost-of-one-time-covid-19-testing-for-all-assisted-living-and-nursing-home-residents-staff-ahca-ncal-says/).  
+  
+Testing every US assisted living community and nursing home resident and staff member for COVID-19 would cost $672 million according to the data from AHCA NCAL.  
+
+```{r}
+link <- 'https://www.ahcancal.org/News/news_releases/Documents/State-Breakdown-COVID-Testing-LTC.pdf'
+out1 <- tabulizer::extract_tables(link)
+out1 <- out1[-1] %>% 
+  do.call(rbind,.) %>%
+  data.frame() 
+names(out1) <- c("State", "Nursing_Facilities", "Nursing_Residents", 'Nursing_Staff','AL_Communities', 'AL_Residents','AL_Staff', 'TestsNeeded', 'TotalCost')
+head(out1)
+```
+  
+*Only some of the states are shown here, the algorithm didnt detected all, check the website for more info*
+  
+California is facing the highest cost for testing, almost 69 million for 458268 tests , while alaska has the smallest bill (588900 for 3926).  
+
+  
+## [Nursing cost report from RHCF](https://healthdata.gov/dataset/nursing-home-cost-report-rhcf-2018)
+  
+The dictionary has 500k entries, how can we identify the relevant ones?  
+  
+Looking at the numeric table we can see what is the most commonly reported, maybe those are te most relevant??
+  
+```{r}
+dictionary <- readxl::read_xlsx("Data/NYSDOH_NHCostReport_2017/NHCRdata_dictionary.xlsx")
+
+numeric1 <- read.csv("Data/NYSDOH_NHCostReport_2017/numeric1.csv")
+
+numeric1 %>%
+  # filter(Class.code == 157)
+  count(Class.code) %>%
+  arrange(desc(n))
+```
+  
+  
+```{r}
+dictionary %>%
+  # filter(stringr::str_detect(description, "Specialists"))
+  filter(class_code == 157) %>%
+  select(description)
+```
+  
+  
+Variables groups:  
+  
+  - 1: Current Assets:  
+    - Cash on Hand & In Banks  
+    - Investments  
+    - Buildings and Fixed equipment  
+    
+  - 157: Expenses including  
+    - Salaries of Technicians and specialists  
+    - Supplies and materials  
+    - Food  
+    - Repairs  
+    - Etc..  
+  
+  - 389: Purchased or Contracted services.  
+  - 410: Bed Capacity - Patient days.  
+  - 411 Admisions and discharges.  
+  - 414: Characteristics of patientes, including:  
+    - Age distribution.  
+    - Length of stay for patients discharged over the reporting period.  
+  - 412 and 413: Demographics of male and female patients.  
+  
+  - 44: Functional Expenses  
+  
+
+```{r}
+# Create key for expenses
+KeyExpenses <- dictionary %>%
+  filter(class_code == 157) %>%
+  mutate(Type = stringr::str_split(string = description, pattern = ";", simplify = T)[,2],
+    Category = stringr::str_split(string = description, pattern = ";", simplify = T)[,3]) %>%
+  select(Type, Category, Class.code = class_code, Line.number = line_no)
+
+# Join with the numeric data
+numeric1 %>%
+  filter(Class.code == 157) %>%
+  left_join(KeyExpenses) %>%
+  group_by(Category) %>%
+  summarise(meanCost = median(Value)) %>% # get the median cost 
+  arrange(desc(meanCost)) # arrange in order of most costs
+```
+ 
+                              **TASKS**
+                              
+Check on pubmed costs for nursery home facilities.  
+Try joining the databases (RHCF report, Nursing home rates) by the Opcert
+  
+Cost loss
+  - not full capacity
+  - PPE
+  - 
+
+  
+i.e. 414 seems to be related with the age distribution of the patients
+  
+```{r}
+# Create key for age
+KeyAge <- dictionary %>%
+  filter(class_code == 414) %>%
+  mutate(Category = stringr::str_split(string = description, pattern = ";", simplify = T)[,3]) %>%
+  select(Category, Class.code = class_code, Line.number = line_no)
+
+# Join with the numeric data
+numeric1 %>%
+  filter(Class.code == 414) %>%
+  left_join(KeyAge) %>%
+  filter(Line.number %in% 1:10) %>%
+  ggplot() +
+  geom_boxplot(aes(x=Category, y=Value))
+```
+  
+44 seems to be related with expenses ?
+  
+```{r}
+dictionary %>%
+  filter(class_code == 44) 
+```
+
+
+
+```{r}
+# Read providers
+providers <- read.csv("Data/NYSDOH_NHCostReport_2017/ProviderList.csv")
+# Set the API Key for google
+library(ggmap)
+ggmap::register_google(key = "AIzaSyD_N8mR5XJIcLXmWuDRSIgS-3CKs0Ny9fE")
+
+GC1 <- providers %>%
+  # slice(1:5) %>%
+  mutate(Address = as.character(Provider.name)) %>%
+  cbind(ggmap::geocode(location = .$Address, output = 'more', source = 'google'))
+
+# write.csv(GC1, "Data/NYSDOH_NHCostReport_2017/Providers_Geocoded.csv", row.names = F)
+
+Providers <- read.csv("Data/NYSDOH_NHCostReport_2017/Providers_Geocoded.csv")
+```
+
+
+
+```{r}
+numeric1 <- read.csv("Data/NYSDOH_NHCostReport_2017/numeric1.csv")
+
+numeric1 %>%
+  # filter(Class.code == 157)
+  count(Class.code) %>%
+  arrange(desc(n))
+
+
+numeric1 %>%
+  filter(Class.code == 414) %>%
+  left_join(KeyAge)
+
+```
+
+
+
+    
+## [Nursing Homes Costs](https://www.seniorliving.org/nursing-homes/costs/).  
+  
+**What is a Nursing home?**, provides nursing care for elderly with 24-hour medical care available. Nursing homes comes at a premium price, $8,365 in average, providing medical care, socialization, rehabilitation, and housekeeping services.  
+
+Average costs:  
+
+| Room Type         | Daily | Monthly | Annually |
+| :---------------- | :---- | :------ | :------- |
+| Semi-Private Room | \$245 | \$7,441 | $89,297  |
+| Private Room      | \$275 | \$8,365 | $100,375 |  
+  
+The monthly average cost by State:
+```{r}
+link <- "https://www.seniorliving.org/nursing-homes/costs/"
+wp <- xml2::read_html(link)
+rvest::html_table(wp)[[3]] %>%
+  head() %>% knitr::kable()
+```
+  
+## Miriam data
+
+```{r}
+key_nh <- readxl::read_xlsx("Data/Alec/Data Documentation.xlsx")
+nh_data <- read.csv("Data/Alec/full_Aug16_nh_data.csv", stringsAsFactors = F)
+key_nh
+
+nh_data[nh_data == 'N'] <- 0
+nh_data[nh_data == 'Y'] <- 1
+```
+
+
+
+
+From Alec:
+The adjusted staff hours per resident day (or HRD) attempts to account for differences in health needs as a factor in determining HRD so that facilities of different case make-ups can be directly compared, where without the adjustment one facility may have more HRDs than another, but still be falling short of what the actual needs of the facility are. Equation is (Reported HRD/RUG-IV Case Mix)*National Avg HRD. The national averages are from the Minimum Data Set (MDS), also from CMS. We're still exploring which to include in our models. I'll add these descriptions to the data dictionary.
+
+```{r}
+nh_data %>%
+  count(provadd) %>%
+  arrange(desc(n))
+
+nh_data %>%
+  count(county.x, county.y) # joined database? why?
+```
+ 
+```{r}
+nh_data %>%
+  filter(state.x == "CA", !is.na(geolocation)) %>% 
+  mutate(geom = st_point(geolocation))
+  st_as_sf()
+  
+p <- nh_data$geolocation %>%
+  gsub(pattern = "POINT ", replacement = "", x = .)%>%
+  stringr::str_split_fixed(string = ., pattern = " ", n = 2) %>%
+  gsub(pattern = "([^0-9.-])", replacement = "", x = .)
+
+nh_sp <- nh_data %>%
+  mutate(x = as.numeric(p[,1]), y = as.numeric(p[,2])) %>%
+  filter(!is.na(x), state.x == "CA") %>%
+  st_as_sf(., coords = c('x', 'y')) %>%
+  select(county.x, provname, provadd, provcity, num_beds)
+
+st_write(nh_sp, "Data/Spatial/nh_sp.shp")
+```
+  
+ 
+  
+```{r}
+nh_data %>%
+  filter(provname == "MILLER'S MERRY MANOR") # data has multiple prov, different locations?
+
+nh_data %>%
+  filter(provadd == "#1 ARBOR TERRACE") # Why some duplicate locations? county_cases, fips, county_case_rate different
+```
+
+## How much does the NH size varies?
+
+*Refer to shiny app*
+  
+  
+  
+Time depending variables vs constant  
+  
+  - Location  
+  - Size of NH  
+  -
+  
+
+How do we test? staff? both? sensitivity of the test  
+  
+How do we initialize the model?  
+  
+  Community prevalence, how does it impact risk of introduction?  
+  Variability comes from size, but also from community transmission.  
+  
+
+# Notes from interview  
+
+This nursery home has 172 residents and 170 staff
+  
+  - Most of rooms are 3 person per room, a couple of rooms are private.  
+  - Private rooms are being used as quarentine areas, i.e. patients that needs to go out or had just had a visit to hospitals, other personel that have to go out and isolate.  
+  - No communal dinning anymore, people eat in the rooms, before they were usually all going to the dining and eating with the same people in the tables.  
+  - No more group activities.  
+  - Weekly testings to staff i.e. Mon, wed, friday.  
+  - For residents they are tested once a month testing every week A beds, next weeks B beds, next week C beds... Testing one person per room once a week.  
+  - Intervenrions for staff includes:  
+    - Check temp, questionaries for symptoms and contact included travel).  
+    - weekly awareness training for the staff to improve biosecurity.  
+    - One false positive in the nursery, was isolated for two weeks and no other infections. Staff testing is prioritized.  
+    - Currently families visit trough a gate/barrier, avoiding physical contact and suppervised that they are using masks and respecting socal distancing.  
+    - Visits are allowed during buisness hours with scheduling.  
+    
+  - Staffing schedules are mostly 5 am to 2, summer 4 to 2.    
+    - Schedules are usually 7-15, 15-23 23-7.   
+    - July they spent \$ 100k dollars in overtime and \$75k in August
+    
+  - Some people walk but not all. They try to keep them in the rooms. 
+  - For each of the 17 beds assigned for isolation which have not been used, they are losing roughly 7,000 a month
+    
+# NH Dynamics.  
+
+## Staff interactions
+
+### Number of residents per staff:  
+
+From an email communication with Miriam:
+
+| Nursing home | Staff rating | RN staffing | Res/district care nurse | Res/Aide |
+| :----------- | :----------- | :---------- | :---------------------- | :------- |
+| Clear view   | above Avg    | Avg         | 25-42                   | 7-9      |
+
+# Testing
+  
+## Staff testing 
+  
+If NH in hot zone, testing to staff will happen twice a week for staff. If NH NOT in hot zone, testing happens once a week (from email communication with Miriam).  
+  
+Test turn around time is pretty fast ~24 hrs.  
+
+  
+## Resident testing  
+  
+A resident per room is tested once a week. Rooms usually have ~3 residents, so every resident get tested every ~3 weeks (from interview with nursery home).  
+
+Residents that were hospitalized will have to be tested and negative prior to arriving back to the NH, however, NH will have a quarantine room for patients comming back from hospital.  
+  
+Residents that have acces to the community (go out for treatment or other procedures) have priority on testing.  
+
+  
+# COVID Dynamics
+
+Staff working at multiple facilities has been identified as a likely source of spread on nursing homes [@McMichael2020]
+49% of the COVID cases among nursing homes are attributable to staff movement between facilities [@Chen2020].  
+
+*Does it makes sense to use the rates [@Brown2020] used for crowding index?*
+  
+Community transmission rates and probability of COVID outbreaks can be found in [@Brown2020] (none is significant tho)
+
+## Hospitalization
+
+This study found that the hospitalization rates for facility residents, visitors and staff were 54.5%, 50%, and 6% respectively.  
+Case fatality rate was 33.7% among residents
+The time between the onset of symptoms and hospitalization of index case was 5 days [@McMichael2020].  
+
+[@Aleta2020] used 8 days in hospital based on the paper from [@Verity2020] (couldn't find it on the original paper).  
+
+To approximate the transfer time to hospitalization we could use:  
+$$Hospitalization\ rate\times \frac{1}{t_h}$$
+```{r}
+0.54*(1/5)
+
+range(rpois(100, 8))
+```
+
+
+## COVID mortality at nursery homes
+
+A study revealed that of 623 nursery homes in Ontario with 78607 residents, 5218 (6.6%) were reported positive, and 1452 (1.8%) died. Case fatality 1452/5218 (27.82%)[@Brown2020]  
+  
+
+## Interventions
+
+### Use of Face masks
+
+In a literature review made by [@Chu2020] concluded that the use of face masks could reduce up to 82% the transmission. 39 studies were evaluated on the use of facemask resulting in a 17.9% of chance of viral infection when no face mask was used and 3.1% of transmission when the face mask was used $\frac{0.174 - 0.031}{0.174} = 0.821$.
+
+```{r}
+odds <- function(x) x/(1-x)
+
+1 - ((0.174 - 0.031)/0.174)
+```
+
+
+
+
+
+# Summary table
+
+| Reference      | Population   | Positive   | Hosp  | Fatality        | Asymptomatic  | Lenght       |
+| :------------- | :----------- | :--------- | :---- | :-------------- | :------------ | :----------- |
+| Pang 2020      | Residents    | 13%        |       | 28.6%(4/14)     | 64.3%         | ----         |
+| Pang 2020      | Staff        | 3.6%       |       | ---             | ---           | ----         |
+| Escobar 2020   | Residents    | 37%        |       | ---             | 51.85%(14/27) | Apr 9-Apr 24 |
+| McMichael 2020 |              |            |       | 34%             |               |              |
+| Roxby 2020     | Residents    | 3.8%(3/80) |       |                 |               |              |
+| Roxby 2020     | Staff        | 3.2%(2/62) |       |                 |               |              |
+| Verity 2020    | General(>60) |            | 16.6% | 5.96% (829/13k) |               |              |
+
+
+# Vaccination
+
+## Pfizer-BioNTech COVID-19 Vaccine
+
+Highlights:
+  
+  - Administered intramuscularly as a 2-dose series with spaces 21 days apart.  
+  - Efficacy after 7 days of 2nd dose:
+    - 65-74 years: 92.9 (53.2, 99.8)
+    - ≥75 years: 100 (-12.1, 100)
+  - Not possible to assess sustained efficacy over a period longer than 2 months
+
+## Moderna
+
+Reported efficacy: 92.5%
+
+## Gamaleya (Sputnik V)
+
+Reported efficacy: 92%
+
+## AZ/Oxford 
+Efficacy depending on dose:
+  - Two complete doses 60%.
+  - half initial dose followed by a complete dose 90%
+  
+  
+```{r}
+e1 <- 0.2
+e2 <- 0.8
+
+de <- e2 - e1
+
+b <- 0.745
+
+x2 <- b*(1-e2)
+
+x1 <- b*(1-e1)
+x2
+x1/((1-e1)/(1-e2))
+
+x1*(e1/e2)
+```
+  
+
+# Objectives:
+
+  - Testing once a week vs twice a week depending on community level transmission, how effective is it?
+    - What is the threshold of community level transmission that will recommend once vs twice a week testing of STAFF?  
+  - Explore scenarios where asymptomatic infected individuals are allowed to work due to staff shortages. Is it doable? maybe ramping up the testing to makeup for the fact that asymptomatic staff is working.  
+  
+!!!!!!!!!!!!!!!!!!!!!! Next steps: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+ * Add probability of transmission = P(Shedding) x P(getting the virus)
+ 
+ * Improve the hospitalization part, have a look at the Yolo dashboad https://www.yolocounty.org/health-human-services/adults/communicable-disease-investigation-and-control/novel-coronavirus-2019/dashboard-and-documents
+  
+
+# References

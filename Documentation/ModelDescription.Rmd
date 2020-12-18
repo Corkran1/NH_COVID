@@ -1,0 +1,43 @@
+---
+title: "Model Description"
+output: github_document
+bibliography: References/References.bib
+---
+
+# Transmission dynamics:
+
+
+The Transmission probability inside the NH depends on the *GlobalTransmission_p*
+
+Scenarios to explore:  
+  - Use of PPE: In this scenario there will be a proportion of staff using PPE, this staff will have a reduced *GlobalTransmission_p* based on an assumption of the effect of the PPE in reducing the transmission.  
+  - Reintroduction of the disease from hospitalizations.  
+  - Introduction via patients that go outside for extra services (physical theraphy, etc.).  
+  - 
+
+## Incubation period
+
+Table from paper by Park et al. [@Park2020]
+
+| Author       | Sample Size | Estimate (CI)  |
+| :----------- | :---------- | :------------- |
+| Li et al.    | 10 cases    | 5.2 (4.1. 7.0) |
+| Backeret al. | 88 cases    | 6.4 (5.6, 7.7) |
+|Linton et al. | 158+52 cases| 5.6 (4.2, 6.3)|
+
+
+
+
+
+## Pre symptomatic transmission
+
+Infectiousness was observed [@He2020]:  
+  
+  - 0.1% 7 days prior symptom onset.  
+  - 1% 5 days prior symptoms onset.  
+  - 9% 3 days prior symptom onset.  
+  
+Infectiousness was estimated to decline quickly within 7 days.  
+
+
+# References

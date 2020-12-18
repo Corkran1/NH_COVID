@@ -1,0 +1,161 @@
+---
+title: "Miriam NH Data"
+output: html_notebook
+---
+
+Problems of shared staffing 
+
+CNA (AIDE in the data) certified nursery aid has less training and sometimes works on more than one nursery home (spend more time with residents).  
+
+LPN licensed practicing nurses  are in the middle
+
+RN Registered Nurses are the ones with more training and better salaries  
+
+Does the CNA have more risk of spreading the disease into nursering homes??
+
+# Miriam data
+
+```{r}
+### Load the libraries
+library(dplyr); library(sf); library(ggplot2)   
+## Load Data
+key_nh <- readxl::read_xlsx("../../Data/Alec/Data Documentation.xlsx")
+nh_data <- read.csv("../../Data/Alec/full_Aug16_nh_data.csv", stringsAsFactors = F)
+key_nh
+
+nh_data[nh_data == 'N'] <- 0
+nh_data[nh_data == 'Y'] <- 1
+```
+
+Does all recent testing done of staff variables should sum the total tests done to the staff?
+
+```{r}
+nh_data %>%
+  count(staff_week_test) # most of the facilities can test the staff in a week, if we knowthe number of tests, we know the number of staff?
+```
+
+
+
+```{r}
+nh_data %>%
+  filter(state.x == "CA") %>%
+  group_by(provcity) %>%
+  summarise(sum(res_total_conf_covid), mean(AIDHRD), mean(VOCHRD), mean(RNHRD))
+```
+
+```{r}
+nh_data %>%
+  filter(FPN == 555881)
+```
+
+AIDHRD - Aide staff hours per resident day
+VOCHRD - LPN staff hours per resident
+RNHRD - RN staff hours per resident
+PTHRD - Physical theraphy hour per resident day
+
+```{r}
+nh_data %>%
+  count(provadd) %>%
+  arrange(desc(n))
+
+nh_data %>%
+  count(county.x, county.y) # joined database? why?
+```
+ 
+ 
+```{r}
+nh_data %>%
+  filter(state.x == "CA", !is.na(geolocation)) %>% 
+  mutate(geom = st_point(geolocation))
+  st_as_sf()
+  
+p <- nh_data$geolocation %>%
+  gsub(pattern = "POINT ", replacement = "", x = .)%>%
+  stringr::str_split_fixed(string = ., pattern = " ", n = 2) %>%
+  gsub(pattern = "([^0-9.-])", replacement = "", x = .)
+
+nh_sp <- nh_data %>%
+  mutate(x = as.numeric(p[,1]), y = as.numeric(p[,2])) %>%
+  filter(!is.na(x), state.x == "CA") %>%
+  st_as_sf(., coords = c('x', 'y')) %>%
+  select(county.x, provname, provadd, provcity, num_beds)
+
+st_write(nh_sp, "Data/Spatial/nh_sp.shp")
+```
+
+ 
+  
+```{r}
+nh_data %>%
+  filter(provname == "MILLER'S MERRY MANOR") # data has multiple prov, different locations?
+
+nh_data %>%
+  filter(provadd == "#1 ARBOR TERRACE") # Why some duplicate locations? county_cases, fips, county_case_rate different
+```
+
+
+# Questions for meeting:
+  
+  - How can we represent the residents with which each type of staff interacted with? 
+  - How can we approximate the number of staff for each type?  
+  - How many times per day a patient is contacted (attended)?  
+  - 
+  
+  
+# Time series data:
+
+According to the [dashboard](https://www.yolocounty.org/health-human-services/adults/communicable-disease-investigation-and-control/novel-coronavirus-2019/dashboard-and-documents):
+  
+  
+| Facility                   | Hospitalization |
+| :------------------------- | :-------------- |
+| Crude hospitalization rate | 11.91% (33/277) |
+| Alderson                   | 15% (12/80)     |
+| Cottonwood                 | 8.69% (6/69)    |
+| Courtyard                  | 12.9% (4/31)    |
+| Glorias                    | 22.22% (2/9)    |
+| Riverbend                  | 4.65% (2/43)    |
+| Stollwood                  | 21.87% (7/32)   |
+| The Californian            | 0% (0/7)        |
+| Woodland                   | 0% (0/6)        |
+
+
+
+```{r}
+Yolo_ts <- read.csv("../../Data/YOLOCOVID-19_Nursing_Home_Dataset (5).csv") %>%
+  mutate(Week.Ending = as.Date(Week.Ending, format = "%m/%d/%y"))
+colnames(Yolo_ts)
+```
+
+
+```{r}
+Yolo_ts %>%
+  group_by(Provider.Name) %>%
+  summarise(capacity = max(Total.Number.of.Occupied.Beds))
+```
+
+
+```{r}
+Yolo_ts %>%
+  group_by(Provider.Name) %>%
+  mutate(Total_cases = sum(Residents.Weekly.Confirmed.COVID.19)) %>% ungroup() %>%
+  filter(Total_cases > 0) %>%
+  ggplot(aes(x=Week.Ending, y=Residents.Total.Confirmed.COVID.19, col = Provider.Name)) +
+  geom_line() +
+  facet_grid(~Provider.Name) +
+  theme(legend.position = 'none')
+```
+
+
+
+```{r}
+Yolo_ts %>%
+  group_by(Provider.Name) %>%
+  mutate(Total_cases = sum(Residents.Weekly.Confirmed.COVID.19)) %>% ungroup() %>%
+  filter(Total_cases > 0) %>%
+  ggplot(aes(x=Week.Ending, y=Residents.Total.Confirmed.COVID.19, col = Provider.Name)) +
+  geom_line() +
+  facet_grid(~Provider.Name) +
+  theme(legend.position = 'none')
+```
+

@@ -351,6 +351,3 @@ y <- lapply(Day, function(x){
 y[300]
 plot(y~Day)
 ```
-
-
-

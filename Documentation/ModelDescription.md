@@ -1,11 +1,64 @@
 Model Description
 ================
 
+# Population
+
+We present a spatial explicit stochastic agent based model that
+recreates the day to day dynamics in a typical nursery home during the
+COVID pandemic in the United States.
+
+## Population Structure
+
+We used the blueprints to recreate the spatial structure of a typical
+nursery home in the US. The nursery home consist on 58 bedrooms
+designated for the residents, recreation areas (such as dining room, and
+activities rooms), and rooms for staff use.
+
+In the initial conditions there are 3 residents per room (total 174) and
+170 staff divided into 3 different turns. The decision on the population
+distribution was based on information obtained from an interview with a
+nursery home in California.
+
+<img src="Figures/NH_B.png" width="400"/>
+
+# Population Dynamics
+
+In our simulation, an agent can interact with other agents based on its
+location. Given the current guidelines of long term facilities, there
+are no visitations and the residents spend most of the day in their
+rooms, so they can only interact with their roommates and the staff. The
+way staff interacts with the residents is based on the type of staff
+(CN, RN, LPN), which have different contact rates that were parametrized
+according on the average number of resident contacts in a normal day
+(REFERENCE: Table shared via email??). The contact rates are presented
+in table from supplementary materials.
+
+| Type of staff | Distribution of resident contacts per turn |
+| ------------- | ------------------------------------------ |
+| CN            |                                            |
+| RN            |                                            |
+| LPN           |                                            |
+
+\(x\sim109\)
+
 # Transmission dynamics:
 
+The Transmission probability inside the NH depends on the
+*GlobalTransmission\_p*
+
+Scenarios to explore:
+
+  - Use of PPE: In this scenario there will be a proportion of staff
+    using PPE, this staff will have a reduced *GlobalTransmission\_p*
+    based on an assumption of the effect of the PPE in reducing the
+    transmission.  
+  - Reintroduction of the disease from hospitalizations.  
+  - Introduction via patients that go outside for extra services
+    (physical theraphy, etc.).  
+  - 
 ## Incubation period
 
-Table from paper by Park et al. (Park et al. 2020)
+Table from paper by Park et al. \[@Park2020\]
 
 | Author        | Sample Size  | Estimate (CI)  |
 | :------------ | :----------- | :------------- |
@@ -15,7 +68,7 @@ Table from paper by Park et al. (Park et al. 2020)
 
 ## Pre symptomatic transmission
 
-Infectiousness was observed (He et al. 2020):
+Infectiousness was observed \[@He2020\]:
 
   - 0.1% 7 days prior symptom onset.  
   - 1% 5 days prior symptoms onset.  
@@ -24,25 +77,3 @@ Infectiousness was observed (He et al. 2020):
 Infectiousness was estimated to decline quickly within 7 days.
 
 # References
-
-<div id="refs" class="references">
-
-<div id="ref-He2020">
-
-He, Xi, Eric H.Y. Lau, Peng Wu, Xilong Deng, Jian Wang, Xinxin Hao, Yiu
-Chung Lau, et al. 2020. “Temporal dynamics in viral shedding and
-transmissibility of COVID-19.” *Nature Medicine* 26 (5): 672–75.
-<https://doi.org/10.1038/s41591-020-0869-5>.
-
-</div>
-
-<div id="ref-Park2020">
-
-Park, Minah, Alex R. Cook, Jue Tao Lim, Yinxiaohe Sun, and Borame L.
-Dickens. 2020. “A Systematic Review of COVID-19 Epidemiology Based on
-Current Evidence.” *Journal of Clinical Medicine* 9 (4): 967.
-<https://doi.org/10.3390/jcm9040967>.
-
-</div>
-
-</div>

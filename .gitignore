@@ -3,5 +3,9 @@
 .RData
 .Ruserdata
 Data/
-Code/NH_COVID/includes
+Miriam_COVID.Rproj
+Shared/
 Code/NH_COVID/.metadata/
+Code/NH_COVID/NH_COVID/includes/
+Documentation/References/
+NH_COVID/

@@ -412,22 +412,15 @@ Efficacy depending on dose:
   - half initial dose followed by a complete dose 90%
   
   
-```{r}
-e1 <- 0.2
-e2 <- 0.8
+# Immunity
 
-de <- e2 - e1
-
-b <- 0.745
-
-x2 <- b*(1-e2)
-
-x1 <- b*(1-e1)
-x2
-x1/((1-e1)/(1-e2))
-
-x1*(e1/e2)
-```
+memory response (from [@Kim2020]:
+  
+  - Sterilizing immunity: No infection.  
+  - Protective immunity: Reduced severity.  
+  - Enhanced immunity: increased disease severity, i.e. dengue.  
+  
+  
   
 
 # Objectives:

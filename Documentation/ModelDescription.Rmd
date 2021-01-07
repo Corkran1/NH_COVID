@@ -39,7 +39,7 @@ All the agents start as susceptible and after 1 day there is a resident introduc
 <img src="Figures/DiseaseDynamics.png" width="600"/>
 
 
-Disease parameters:
+Transmission parameters:
 
 | Name                     | Value            | Reference|
 |--------------------------|------------------|----------|

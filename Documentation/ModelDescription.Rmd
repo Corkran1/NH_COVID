@@ -1,21 +1,24 @@
 ---
-title: "Model Description"
+title: "Methods/Results"
 bibliography: References/References.bib
+# output: word_document
 ---
 
-# Population
+# Methods
 
-We present a spatial explicit stochastic agent based model that recreates the day to day dynamics in a typical nursery home during the COVID pandemic in the United States. Our time resolution for the model was every hour and we ran the model for 150 days.
+## Population
 
-## Population structure
+We present a spatial explicit stochastic agent based model that recreates the day to day dynamics in a typical nursery home during the COVID pandemic in the United States. We use an hourly time step resolution and we ran the model for 150 days.
 
-We used the floor plans to recreate the spatial structure of a typical nursery home in the US (figure 1). The nursery home consist on 58 bedrooms designated for the residents, recreation areas (such as dining room, and activities rooms), and rooms for staff use. In the initial conditions there are 3 residents per room (total 174) and 170 staff divided into 3 different turns. The decision on the population distribution was based on information obtained from an interview with a nursery home in California.
+### Population structure
+
+We used the floor plans and satellite imagery to recreate the spatial structure of a typical nursery home in the US (figure 1). The nursery home consist on 58 bedrooms designated for the residents, recreation areas (such as dining room, and activities rooms), and rooms for staff use. In the initial conditions there are 3 residents per room (total 174) and 170 staff divided into 3 different turns. The decision on the population distribution was based on information obtained from an interview with a nursery home in California.
 
 <img src="Figures/NH_B.png" width="400"/>
 
-# Population dynamics
+### Population dynamics
 
-In our simulation, an agent can interact with other agents based on its location. Given the current guidelines of recommendations for long term care facilities, there are no visitations and the residents spend most of the day in their rooms, so they can only interact with their roommates and the staff. In our model each resident will have at least one interaction with the staff per day which is based on different contact rates depending on the staff type (CN, RN, LPN), which will have different contact rates that were parametrized according on the average number of resident contacts in a normal day (REFERENCE: Table shared via email??). The contact rates are presented in table from supplementary materials.
+In our simulation, an agent can interact with other agents based on its location. Given the current guidelines of recommendations for long term care facilities, there are no visitations and the residents spend most of the day in their rooms, so they can only interact with their roommates and the staff. In our model each resident will have at least one interaction with the staff per day which is based on different contact rates depending on the staff type (CN, RN, LPN), The staff will have different contact rates that were parametrized according on the average number of resident contacts in a normal day (REFERENCE: Table shared via email??). The contact rates are presented in table from supplementary materials.
 
 | Type of staff | Distribution of resident contacts per turn |
 |---------------|--------------------------------------------|
@@ -23,62 +26,100 @@ In our simulation, an agent can interact with other agents based on its location
 | RN            | $x\sim Mult(n,\pi)$                      |
 | LPN           | $x\sim Mult(n,\pi)$                      |
 
-The staff agents are assigned to one of 3 different work schedules (morning, afternoon or night) and they spend 8 hours inside the nursery home and the rest of the time outside in the community, we only follow the agents inside the nursery home.
+The staff agents are assigned to one of 3 different work schedules (morning, afternoon or night) and they spend 8 hours inside the nursery home and the rest of the time outside in the community. We only follow the agents inside the nursery home and when the agents are outside we assume that they all have the same probability of contacting other people.
 
-# Disease dynamics:
+### Disease dynamics:
 
 The transmission between agents inside the facility will depend on two parts, which are the probability that a person will shed the virus and the probability that another person will get the virus. We decided on model the transmission this way to represent scenarios where the infected and susceptible could have different combination of interventions (i.e. only infected received the intervention, only susceptible received the intervention, both received the intervention, etc..). The parametrization of the transmission parameters was based on observed outbreaks in nursery homes in California.
 
 The introduction from the community to the facility depends on a parameter *Introduction\_p* that represents how likely is that a staff agent will be infected in the community.
 
-Once the transmission between a infectious agent to a susceptible agent has been successful, the susceptible agent becomes exposed and based on a distribution for the latent period, the agent becomes infectious after $\lamda$ number of days, which can be either symptomatic and asymptomatic.
+All the agents start as susceptible and after 1 day there is a resident introduced with the disease. Then we follow up for 150 days or until the disease has been absent for more than 14 simulation days. Once the transmission between a infectious agent to a susceptible agent has been successful, the susceptible agent becomes exposed and based on a distribution for the latent period $\lambda$, the agent becomes infectious after $\lambda$ number of days, which can be either symptomatic and asymptomatic. The agent can infect other agents only when its in the Infectious state, then they remain infectious during 15 days and they transition to recovered. The agents can transition to infectious to hospitalized at any moment based on the hospitalization rate. When the agents has been recovered they acquire infection immunity, which lasts for ___ days.
 
-Model parameters:
-
-| Name                     | Distribution      | Reference|
-|--------------------------|-------------------|----------|
-| Latent period ($\lambda$)| $Lognormal(7, 3)^a$| Fitted distribution based on [@He2020]|
-| Shedding probability     | $0.4^b$            |          |
-| Infection probability    | $0.4^b$            |          |
-| Introduction probability | $0.01^b$           |          |
-| Asymptomatic probability | $0.25^b$           |          |
-| Hospitalization rate     | $0.11$             |          |
-| Vaccine effect first and second dose| $60%$,$90%$|          |
-| Vaccine immunity duration| $120\ days^b$      |          |
-| Test detection probability| $75%$             |          |
-| PPE Effect| | |
+<img src="Figures/DiseaseDynamics.png" width="600"/>
 
 
+Disease parameters:
 
-$^a$Truncated distribution between a boundary of reasonable values, $^b$explored for sensitivity analysis and scenario modeling
+| Name                     | Value            | Reference|
+|--------------------------|------------------|----------|
+| Latent period ($\lambda$)| $Lognormal(7, 3)$| [@He2020]$^{b,c}$|
+| Shedding probability     | $0.4$            | $^a$     |
+| Infection probability    | $0.4$            | $^a$     |
+| Introduction probability | $0.01$           | $^a$     |
+| Asymptomatic probability | $0.25$           | $^a$     |
+| Infection duration       | $15\ days$       | $^a$     |
+| Hospitalization rate     | $0.11$           | $^a$     |
 
-Susceptible
+$^a$Explored for sensitivity analysis and scenario modeling, $^b$truncated distribution between a boundary of reasonable values, $^c$fitted to a distribution
 
-Scenarios to explore:
+## Interventions
 
--   Use of PPE: In this scenario there will be a proportion of staff using PPE, this staff will have a reduced *GlobalTransmission\_p* based on an assumption of the effect of the PPE in reducing the transmission.  
--   Reintroduction of the disease from hospitalizations.  
--   Introduction via patients that go outside for extra services (physical theraphy, etc.).  
--   
+We explore 3 different COVID-19 control strategies and the combination of them. Each of the interventions have an impact in the transmission of the disease, interventions such as the use of PPE and vaccination reduces the probability of transmission affecting directly the *Shedding* and *Infection probability*, while the isolation affects the transmission indirectly stopping the agent to interact with other agents.
+The equation 1 shows the effect of *PPE effect* and *Vaccine effect* on the transmission probability, where $odds_\omega$ represent the global transmission probability for all agents, $OR_\gamma$ represent the odds ratio for the *PPE effect*, and $OR\pi$ is the *Vaccine effect*. This probability is computed for all agents at each step so we can have different probabilities of transmission based on the interventions each individual received.  
 
-## Incubation period
+$$p_T = \frac{e^{\ln(odds_\omega) + \ln(OR_\pi)+ \ln(OR_\upsilon)}}{1 + e^{\ln(odds_\omega) + \ln(OR_\pi)+ \ln(OR_\upsilon)}}$$
+For the implementation of the vaccination, we specified by the proportion of residents and staff vaccinated, and a fixed interval between the first and second dose. Then the vaccination immunity will have a decay of 120 days and the individual will no longer have the vaccination immunity protective effect.
 
-Table from paper by Park et al. [@Park2020]
+Since there is still some uncertainty in the effect of the use of PPE and the vaccine for older population, we started with values that are within the range of reported values and then varied these values for the sensitivity analysis and scenario modeling.
 
-| Author        | Sample Size  | Estimate (CI)  |
-|:--------------|:-------------|:---------------|
-| Li et al.     | 10 cases     | 5.2 (4.1. 7.0) |
-| Backeret al.  | 88 cases     | 6.4 (5.6, 7.7) |
-| Linton et al. | 158+52 cases | 5.6 (4.2, 6.3) |
+### Testing and isolation
 
-## Pre symptomatic transmission
+Our model represents the testing of the population with 2 different approaches:  
 
-Infectiousness was observed [@He2020]:
+  - Passive, individuals are tested once that they present symptoms, this approach is focused on the early detection of symptomatic individuals.
+  - Active, a proportion of individuals are tested with a given frequency. In baseline scenario, 1 resident per room and all the staff are tested weekly. If 1 of the residents in a room is detected positive, the rest of the residents in that room are also tested.
+  
+Once a individual has been detected positive is isolated. There are special isolation rooms for the residents and in the case of the staff they are sent home. Once the individual is tested negative it return to the facility.
+    
+Interventions parameters:
 
--   0.1% 7 days prior symptom onset.  
--   1% 5 days prior symptoms onset.  
--   9% 3 days prior symptom onset.
+| Name                     | Value              | Reference|
+|--------------------------|--------------------|----------|
+| Test detection probability| $75\%$            | $^a$     |
+| Proportion of Staff tested|                   | $^a$     |
+| Proportion of Residents tested|               | $^a$     |
+| Frequency of testing     |                    | $^a$     |
+| PPE Effect ($OR_\pi$) | 0.34089               |[@Chu2020]$^a$|
+| Vaccine effect first and second dose ($OR_\upsilon$)| $60\%$,$90\%$| [@Pfizer2020]$^a$|
+| Vaccine immunity duration| $120\ days$        | $^a$         |
 
-Infectiousness was estimated to decline quickly within 7 days.
+$^a$Explored for sensitivity analysis and scenario modeling, $^b$truncated distribution between a boundary of reasonable values, $^c$fitted to a distribution
+
+# Results
+
+## Sensitivty analisis
+
+## Scenario modeling
+
+
+<!-- Susceptible -->
+
+<!-- Scenarios to explore: -->
+
+<!-- -   Use of PPE: In this scenario there will be a proportion of staff using PPE, this staff will have a reduced *GlobalTransmission\_p* based on an assumption of the effect of the PPE in reducing the transmission.   -->
+<!-- -   Reintroduction of the disease from hospitalizations.   -->
+<!-- -   Introduction via patients that go outside for extra services (physical theraphy, etc.).   -->
+<!-- -    -->
+
+<!-- ## Incubation period -->
+
+<!-- Table from paper by Park et al. [@Park2020] -->
+
+<!-- | Author        | Sample Size  | Estimate (CI)  | -->
+<!-- |:--------------|:-------------|:---------------| -->
+<!-- | Li et al.     | 10 cases     | 5.2 (4.1. 7.0) | -->
+<!-- | Backeret al.  | 88 cases     | 6.4 (5.6, 7.7) | -->
+<!-- | Linton et al. | 158+52 cases | 5.6 (4.2, 6.3) | -->
+
+<!-- ## Pre symptomatic transmission -->
+
+<!-- Infectiousness was observed [@He2020]: -->
+
+<!-- -   0.1% 7 days prior symptom onset.   -->
+<!-- -   1% 5 days prior symptoms onset.   -->
+<!-- -   9% 3 days prior symptom onset. -->
+
+<!-- Infectiousness was estimated to decline quickly within 7 days. -->
 
 # References

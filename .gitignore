@@ -3,10 +3,11 @@
 .RData
 .Ruserdata
 Data/
-Miriam_COVID.Rproj
-Shared/
+NH_COVID.Rproj
+Code/NH_COVID/.gama.epf
 Code/NH_COVID/.metadata/
 Code/NH_COVID/NH_COVID/includes/
+Code/NH_COVID/NH_COVID/models/results/
 Documentation/References/
 Documentation/Figures/FloorPlans.qgz
 

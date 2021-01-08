@@ -361,12 +361,35 @@ A study revealed that of 623 nursery homes in Ontario with 78607 residents, 5218
 
 ### Use of Face masks
 
-In a literature review made by [@Chu2020] concluded that the use of face masks could reduce up to 82% the transmission. 39 studies were evaluated on the use of facemask resulting in a 17.9% of chance of viral infection when no face mask was used and 3.1% of transmission when the face mask was used $\frac{0.174 - 0.031}{0.174} = 0.821$.
+In a literature review made by [@Chu2020] concluded that the use of face masks could reduce up to 82% the transmission. 39 studies were evaluated on the use of face mask resulting in a 17.9% of chance of viral infection when no face mask was used and 3.1% of transmission when the face mask was used.
 
-```{r}
+$$
+odds_0 = \frac{0.179}{1- 0.179} \\
+odds_1 = \frac{0.031}{1-0.031} \\
+
+$$
+
+```{r Calculat OR}
 odds <- function(x) x/(1-x)
+odds_to_p <- function(x) x/(1+x)
 
-1 - ((0.174 - 0.031)/0.174)
+p_I <- 0.6 # Baseline probability of infection
+o_I <- odds(p_I) # odds of infection
+
+p_0 <- 0.179 # probability of infection for group 0 (no mask)
+p_1 <- 0.031 # probability of infection for group 1 (with mask)
+
+o_0 <- odds(p_0) # odds of infection group 0
+o_1 <- odds(p_1) # odds of infection group 1
+OR_PPE <- o_1/o_0 # Odds ratio of infection per group (no mask baseline)
+
+OR_0 <- exp(log(o_I) + (log(OR_PPE)*0)) # OR for group 0
+OR_1 <- exp(log(o_I) + log(OR_PPE)*1) # OR for group 1
+
+P_0 <- odds_to_p(OR_0)
+P_1 <- odds_to_p(OR_1)
+
+c("Probability group 0" = P_0, 'Probability group 1' = P_1)
 ```
 
 
@@ -398,9 +421,39 @@ Highlights:
     - ≥75 years: 100 (-12.1, 100)
   - Not possible to assess sustained efficacy over a period longer than 2 months
 
-## Moderna
+Data from the paper by [@Polack2020]
+- N = 43k in a 1:1 allocation for vaccine and placebo.
+- Vaccine group had 8 cases from which 1 was severe
+- Placebo group: 162 cases from which 10 were severe
 
-Reported efficacy: 92.5%
+```{r OR for Pfizer}
+get_OR <- function(n0, n1, x0, x1){
+  p1 <- x1/n1
+  p0 <- x0/n0
+
+  o1 <- odds(p1)
+  o0 <- odds(p0)
+  o1/o0
+}
+
+OR_P <- get_OR(n0 = 18325, n1 = 18198, x0 = 162, x1 = 8) # overall OR
+OR_P1 <- get_OR(n0 = 10896, n1 = 10889, x0 = 114, x1 = 5) # age group 16-55
+OR_P2 <- get_OR(n0 = 7950, n1 = 7971, x0 = 48, x1 = 3) # age group >55
+```
+
+
+## Moderna [@Baden2020]
+
+Reported efficacy:
+  - 18-64 years: 95.6 (90.6-07.9)
+  - >64 years: 86.4 (61.4-95.2)
+
+```{r OR for Moderna}
+OR_M <- get_OR(n0 = 14073, n1 = 14134, x0 = 185, x1 = 11) # overall OR
+OR_M1 <- get_OR(n0 = 10521, n1 = 10551, x0 = 156, x1 = 7) # 18-64
+OR_M2 <- get_OR(n0 = 3552, n1 = 3583, x0 = 29, x1 = 4) # >64
+```
+
 
 ## Gamaleya (Sputnik V)
 
@@ -411,6 +464,29 @@ Efficacy depending on dose:
   - Two complete doses 60%.
   - half initial dose followed by a complete dose 90%
   
+
+```{r}
+OR_P <- exp(log(o_I) + log(OR_PPE)*0 + log(OR_P)*1) # OR for pfizer overall
+P_P <- odds_to_p(OR_P)
+
+OR_P1 <- exp(log(o_I) + log(OR_PPE)*0 + log(OR_P1)*1) # OR for pfizer 18-64 years
+P_P1 <- odds_to_p(OR_P1)
+
+OR_P2 <- exp(log(o_I) + log(OR_PPE)*0 + log(OR_P2)*1) # OR for pfizer >64 years
+P_P2 <- odds_to_p(OR_P2)
+
+OR_M <- exp(log(o_I) + log(OR_PPE)*0 + log(OR_M)*1) # OR for Moderna overall
+P_M <- odds_to_p(OR_M)
+
+OR_M1 <- exp(log(o_I) + log(OR_PPE)*0 + log(OR_M1)*1) # OR for Moderna 18-64 years
+P_M1 <- odds_to_p(OR_M1)
+
+OR_M2 <- exp(log(o_I) + log(OR_PPE)*0 + log(OR_M2)*1) # OR for Moderna >64 years
+P_M2 <- odds_to_p(OR_M2)
+
+P_P; P_P1; P_P2; P_M; P_M1; P_M2
+```
+
   
 # Immunity
 

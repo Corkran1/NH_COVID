@@ -140,8 +140,10 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   facet_grid(~Scenario) +
   ggtitle(" Epidemic duration")
 
+
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Probability of Detection", color = "grey20", face = "bold", size = 14))
+  annotate_figure(text_grob("Probability of Detection", color = "grey20", face = "bold", size = 14)) %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/ProbDetection.png", width = 9, height = 5)
 ```
 
 ## Introduction probability
@@ -189,7 +191,8 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Probability of Introduction", color = "grey20", face = "bold", size = 14))
+  annotate_figure(text_grob("Probability of Introduction", color = "grey20", face = "bold", size = 14)) %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Introduction.png", width = 9, height = 5)
 ```
 ## Transmission probability
 
@@ -236,7 +239,8 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Transmission rate", color = "grey20", face = "bold", size = 14))
+  annotate_figure(text_grob("Transmission rate", color = "grey20", face = "bold", size = 14)) %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Transmission.png", width = 9, height = 5)
 ```
 
 ## Effect of Face masks
@@ -284,7 +288,8 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Effect of PPE", color = "grey20", face = "bold", size = 14))
+  annotate_figure(text_grob("Effect of PPE", color = "grey20", face = "bold", size = 14)) %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/PPE.png", width = 9, height = 5)
 ```
 
 ## Use of PPE

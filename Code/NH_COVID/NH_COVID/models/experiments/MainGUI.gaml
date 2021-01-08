@@ -29,8 +29,8 @@ experiment MainGUI type:gui{
 		display TS refresh: every(1 #cycles){
 			chart "Epi Curve" type: series{
 //				data "Exposed Residents" style:line value:E_r color:#orange;
-//				data "Infected Residents" style:line value:I_r color:#red;
-				data "Cumulative Infected" style:line value:Cumulative_I_r color:#red;
+				data "Infected Residents" style:line value:I_r color:#red;
+				data "Cumulative Infected" style:line value:Cumulative_I_r color:#darkred;
 //				data "Susceptible Residents" style:line value:S_r color:#green;
 			}
 		}

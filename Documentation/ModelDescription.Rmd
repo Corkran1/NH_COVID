@@ -97,6 +97,9 @@ To asses the effect of different combination of interventions we defined differe
   - Scenario 04: In this scenario the staff is prioritized over the residents for vaccination.
   
 **Scenarios based on the different efficacy reported by the papers [@Baden2020] and [@Polack2020]**
+  - Vaccine is equally effective for both residents and staff [@Palack2020].  
+  - Vaccine is less effective in older population using Pfizer data 
+  - Vaccine is less effective in older using Moderna data
 
 
 |Scenario| $T_f$ |$T_r$|$T_s$| $V_e$| $V_d$   |$V_r$| $V_s$|

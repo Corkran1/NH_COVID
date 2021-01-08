@@ -7,7 +7,6 @@
 
 /*
  * Notes:
- * Add probability of transmission = P(Shedding) x P(getting the virus)
  * Improve the hospitalization part, have a look at the Yolo dashboad https://www.yolocounty.org/health-human-services/adults/communicable-disease-investigation-and-control/novel-coronavirus-2019/dashboard-and-documents
  * 
  */
@@ -19,7 +18,7 @@ import "species/Interventions.gaml"
 global{
 	// Main settings:
 	bool ExportResults <- true;
-//	float seed <- int(self) + 1.0;
+	float seed <- int(self) + 10.0;
 	int SimLength <- 150*24; //120 days
 	int TestingFreq <- 7;
 	int Days_free;
@@ -58,14 +57,14 @@ global{
 	int InitialInfected <- 0;
 	float infection_distance <- 1.5#m;
 	float GlobalTransmission_p <- 0.09;
-	float GlobalShedding_p <- 0.4;
-	float GlobalInfection_p <- 0.4;
+	float GlobalShedding_p <- 0.5;
+	float GlobalInfection_p <- 0.5;
 	float Asymptomatic_p <- 0.25;
-	float Test_sensitivity <- 0.75;
+	float Test_sensitivity <- 0.85;
 	float Introduction_p <- 0.01;
 	float Hosp_rate <- 0.11;
-	float Res_Hospitalization <- 0.15/(24*5); // !!!!!!!!!!!! HOW DO WE DEFINE A HOSP RATE? !!!!!!!!!!!!!!!!!
-//	float Res_Hospitalization <- 0.108/(24*5); // !!!!!!!!!!!! HOW DO WE DEFINE A HOSP RATE? !!!!!!!!!!!!!!!!!
+	float Res_Hospitalization <- 0.15/(24*5); // 
+//	float Res_Hospitalization <- 0.108/(24*5); //
 	int Infection_Duration <- 15;
 	
 	// Disease outcomes
@@ -73,13 +72,11 @@ global{
 	int I_r <- 0 update: Residents count (each.is_infectious);
 	int E_r <- 0 update: Residents count (each.is_infected);
 	int H <- 0 update: Residents count (each.is_hospitalized);
-	
 	int S_s <- 0 update: Staff count (each.is_susceptible);
 	int I_s <- 0 update: Staff count (each.is_infectious);
 	int E_s <- 0 update: Staff count (each.is_infected);
-	
-	int I <- 0 update: I_r + I_s;
-	int E <- 0 update: E_r + E_s;
+	int I <- 0 update: I_r + I_s; // Total Infected
+	int E <- 0 update: E_r + E_s; // Total Exposed
 	
 	int Cumulative_I;
 	int Cumulative_I_r;
@@ -95,17 +92,21 @@ global{
 	bool Staff_Vaccination;
 	// ~~~~~~PPE USE~~~~~~~
 	bool PPE_Use;
-	float PPE_effect <- 0.0;
-	float p_PPE_res <- 0.9;
-	float p_PPE_staff <- 0.9;
+	float PPE_effect <- 0.7;
+	float PPE_OR <- 0.1467; // Odds ratio for the use of PPE
+	float p_PPE_res <- 0.8;
+	float p_PPE_staff <- 0.99;
+	
 	// ~~~~~~Vaccination~~~~~
 	float Vaccine_effect <- 0.0;
-	float Vaccination_effect_I <- 0.6;
-	float Vaccination_effect_II <- 0.8;
-	float p_vaccination_res <- 0.6;
-	float p_vaccination_staff <- 0.6;
+	float p_vaccination_res <- 0.0;
+	float p_vaccination_staff <- 0.0;
 	int Vaccination_decay <- 120*24;
 	int vaccination_freq <- 90; // when should another vaccination happen?
+	
+	float Vaccination_OR <- 0.0493; // Odds ratio for vaccination
+	float First_dose_effect <- 0.6; // the first dose effect will be scaled by this constant.
+	
 	
 	float Vi_first_dose <- 0.6 parameter: "First Dose Immunity";
 	float Vi_second_dose <- 0.9 parameter: "Second Dose Immunity";
@@ -139,12 +140,14 @@ global{
 					add self to: myself.CurrentRes;
 					// PPE
 					if flip(p_PPE_res){
+						x_PPE <- 1;
 //						transmission_p <- GlobalTransmission_p * (1-PPE_effect);
 //						shedding_p <- GlobalShedding_p * (1-PPE_effect);
 //						infection_p <- GlobalInfection_p * (1-PPE_effect);
 						PPE_e <- 1-PPE_effect;
 						
 					}else{
+						x_PPE <- 0;
 						PPE_e <- 1.0;
 //						transmission_p <- GlobalTransmission_p;
 //						shedding_p <- GlobalShedding_p;
@@ -153,9 +156,11 @@ global{
 //					// Initial Vaccination
 //					if flip(p_vaccination_res){
 //						is_vaccinated <- true;
-//						transmission_p <- GlobalTransmission_p * (1-Vaccine_effect);
-//						shedding_p <- GlobalShedding_p * (1-Vaccine_effect);
-//						infection_p <- GlobalInfection_p * (1-Vaccine_effect);
+//						Vaccine_e <- 1-Vi_first_dose;
+//						x_Vaccine <- First_dose_effect;
+////						transmission_p <- GlobalTransmission_p * (1-Vaccine_effect);
+////						shedding_p <- GlobalShedding_p * (1-Vaccine_effect);
+////						infection_p <- GlobalInfection_p * (1-Vaccine_effect);
 //					}
 				}
 			}
@@ -183,8 +188,12 @@ global{
 			}
 			
 			if flip(p_PPE_staff){
-						transmission_p <- GlobalTransmission_p * (1-PPE_effect);
+				x_PPE <- 1;
+				PPE_e <- 1-PPE_effect;
+				transmission_p <- GlobalTransmission_p * (1-PPE_effect);
 					}else{
+						x_PPE <- 0;
+						PPE_e <- 1.0;
 						transmission_p <- GlobalTransmission_p;
 					}
 					// Initial Vaccination
@@ -197,9 +206,6 @@ global{
 		}
 		
 
-		
-		
-		
 		write 'Morning Staff N; ' + Staff count (each.schedule = 1);
 		write 'Afternoon Staff N; ' + Staff count (each.schedule = 2);
 		write 'Evening Staff N; ' + Staff count (each.schedule = 3);
@@ -238,10 +244,9 @@ global{
 //		bool OutbreakEnded;
 		Days_free <- Days_free + 1;
 //		write 'E: ' + E_r + '||  I:' + I_r;
-		if Days_free > 24*5{
+		if Days_free > 24*7{
 //			OutbreakEnded <- true;
-			write "Outbreak ended at:" + cycle;
-			
+			write "Outbreak ended at:" + cycle;	
 		}
 	}
 

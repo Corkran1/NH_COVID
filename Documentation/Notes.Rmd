@@ -366,14 +366,14 @@ In a literature review made by [@Chu2020] concluded that the use of face masks c
 $$
 odds_0 = \frac{0.179}{1- 0.179} \\
 odds_1 = \frac{0.031}{1-0.031} \\
-
+OR = \frac{odds_1}{odds_0}
 $$
 
 ```{r Calculat OR}
 odds <- function(x) x/(1-x)
 odds_to_p <- function(x) x/(1+x)
 
-p_I <- 0.6 # Baseline probability of infection
+p_I <- 0.5 # Baseline probability of infection
 o_I <- odds(p_I) # odds of infection
 
 p_0 <- 0.179 # probability of infection for group 0 (no mask)
@@ -390,6 +390,12 @@ P_0 <- odds_to_p(OR_0)
 P_1 <- odds_to_p(OR_1)
 
 c("Probability group 0" = P_0, 'Probability group 1' = P_1)
+```
+```{r OR boundaries}
+#low boundary
+odds(0.015)/odds(0.174)
+# upper boundary
+odds(0.067)/odds(0.174)
 ```
 
 
@@ -415,7 +421,7 @@ c("Probability group 0" = P_0, 'Probability group 1' = P_1)
 
 Highlights:
   
-  - Administered intramuscularly as a 2-dose series with spaces 21 days apart.  
+  - Administered intramuscularl as a 2-dose series with spaces 21 days apart.  
   - Efficacy after 7 days of 2nd dose:
     - 65-74 years: 92.9 (53.2, 99.8)
     - ≥75 years: 100 (-12.1, 100)
@@ -436,9 +442,11 @@ get_OR <- function(n0, n1, x0, x1){
   o1/o0
 }
 
-OR_P <- get_OR(n0 = 18325, n1 = 18198, x0 = 162, x1 = 8) # overall OR
-OR_P1 <- get_OR(n0 = 10896, n1 = 10889, x0 = 114, x1 = 5) # age group 16-55
-OR_P2 <- get_OR(n0 = 7950, n1 = 7971, x0 = 48, x1 = 3) # age group >55
+or_P <- get_OR(n0 = 18325, n1 = 18198, x0 = 162, x1 = 8) # overall OR
+or_P1 <- get_OR(n0 = 10896, n1 = 10889, x0 = 114, x1 = 5) # age group 16-55
+or_P2 <- get_OR(n0 = 7950, n1 = 7971, x0 = 48, x1 = 3) # age group >55
+
+or_P; or_P1; or_P2
 ```
 
 
@@ -452,6 +460,8 @@ Reported efficacy:
 OR_M <- get_OR(n0 = 14073, n1 = 14134, x0 = 185, x1 = 11) # overall OR
 OR_M1 <- get_OR(n0 = 10521, n1 = 10551, x0 = 156, x1 = 7) # 18-64
 OR_M2 <- get_OR(n0 = 3552, n1 = 3583, x0 = 29, x1 = 4) # >64
+
+OR_M; OR_M1; OR_M2
 ```
 
 
@@ -465,9 +475,20 @@ Efficacy depending on dose:
   - half initial dose followed by a complete dose 90%
   
 
+  
+```{r}
+OR_P <- exp(log(o_I) + log(OR_PPE)*1 + log(or_P)*0.6) # OR for pfizer overall
+odds_to_p(OR_P)
+
+OR_P <- exp(log(o_I) + log(OR_PPE)*1 + log(or_P)*1) # OR for pfizer overall
+odds_to_p(OR_P)
+```
+
 ```{r}
 OR_P <- exp(log(o_I) + log(OR_PPE)*0 + log(OR_P)*1) # OR for pfizer overall
 P_P <- odds_to_p(OR_P)
+
+
 
 OR_P1 <- exp(log(o_I) + log(OR_PPE)*0 + log(OR_P1)*1) # OR for pfizer 18-64 years
 P_P1 <- odds_to_p(OR_P1)

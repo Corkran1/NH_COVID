@@ -29,6 +29,9 @@ species Rooms{
 
 //============Species:people================
 species People skills:[moving]{
+	// DUMMY FOR TEST
+//	float A00;
+	
 	Rooms current_room;
 	bool is_active <- true;
 	string people_type;
@@ -45,21 +48,30 @@ species People skills:[moving]{
 	bool hosp_patient; // will the patient require hospitalization?
 	bool is_hospitalized; //Are they hospitalized in the same building??
 	bool is_isolated;
-	float PPE_e;
+	// PPE
+	float PPE_e <- 1.0;
+	int x_PPE;
+	
+	// Vaccine
+	float Vaccine_e <- 1.0;
+	float x_Vaccine;
+	
+	
 	// vaccination
 	bool is_vaccinated;
 	int vaccinated_days;
 	int vaccine_doses;
 	
-	float t; //Variable to represent the discrete time for integration
-   	float MVi <- Vi_first_dose; //Max Effect
-	float Vi <- 0.01; //initial Immune response
-	float dVi <- MVi - Vi; // Immunity to Max
-	
-  	float vi_rise <- G_Rise; //Rate of rise
-   	float vi_decay <- G_Decay; //Rate of decay
-   	float h <- 1.0;
-   	string mm <- "Euler";
+	// Parameters for equation
+//	float t; //Variable to represent the discrete time for integration
+//   	float MVi <- Vi_first_dose; //Max Effect
+//	float Vi <- 0.01; //initial Immune response
+//	float dVi <- MVi - Vi; // Immunity to Max
+//	
+//  	float vi_rise <- G_Rise; //Rate of rise
+//   	float vi_decay <- G_Decay; //Rate of decay
+//   	float h <- 1.0;
+//   	string mm <- "Euler";
 	
 	
 	string infection_source;
@@ -80,10 +92,10 @@ species People skills:[moving]{
 	int infected_days;
 	
 	// ~~~~~~~~ Equations
-	equation eqSIR{ 
-    diff(dVi,t) = (- vi_rise * dVi * Vi / MVi);
-    diff(Vi,t) = (vi_rise * dVi * Vi / MVi) - (vi_decay * Vi);
-    }
+//	equation eqSIR{ 
+//    diff(dVi,t) = (- vi_rise * dVi * Vi / MVi);
+//    diff(Vi,t) = (vi_rise * dVi * Vi / MVi) - (vi_decay * Vi);
+//    }
 	
 	//~~~~~~~~ Actions
 	action infect{
@@ -96,8 +108,6 @@ species People skills:[moving]{
 				max_hosp_days <- poisson(8); // how many days will the resident spend in hospital? (if hospitalized)
 				infection_agent <- myself;
 				write string(myself) + " Infected " + self + ' at cycle:' + cycle;
-			
-			
 				if(self.people_type = 'staff'){
 					Cumulative_I_s <- Cumulative_I_s + 1;
 				} else if(self.people_type = 'resident'){
@@ -105,7 +115,6 @@ species People skills:[moving]{
 				}
 			 }
 			}	
-			
 	}
 	
 	//~~~~~~~~ Reflex
@@ -116,8 +125,18 @@ species People skills:[moving]{
 	// Disease dynamics
 	reflex Disease_dynamics{
 		// update susceptibility
-		shedding_p <- GlobalShedding_p*PPE_e;
-		transmission_p <- GlobalTransmission_p*PPE_e;
+		float odds_s <- GlobalShedding_p/(1-GlobalShedding_p); // compute the odds of the base probability of transmission [W]
+		float shedding_o <- exp(ln(odds_s) + ln(PPE_OR)*x_PPE + ln(Vaccination_OR)*x_Vaccine);
+		shedding_p <-  shedding_o/(1 + shedding_o); //convert the odds to probability
+		
+		float odds_i <- GlobalShedding_p/(1-GlobalShedding_p); // compute the odds of the base probability of transmission
+		float infection_o <- exp(ln(odds_i) + ln(PPE_OR)*x_PPE + ln(Vaccination_OR)*x_Vaccine);
+		infection_p <-  infection_o/(1 + infection_o); //convert the odds to probability
+		
+//		shedding_p <- GlobalShedding_p*PPE_e*Vaccine_e;
+//		transmission_p <- GlobalInfection_p*PPE_e*Vaccine_e;
+//		infection_p <- GlobalInfection_p*PPE_e*Vaccine_e;
+		
 		
 		if is_infected{
 			infected_t <- infected_t + 1;
@@ -132,7 +151,6 @@ species People skills:[moving]{
 		}
 		
 		if is_infectious{
-			
 			infected_t <- infected_t + 1;
 			if flip(shedding_p) and is_active{
 				do infect;
@@ -159,29 +177,35 @@ species People skills:[moving]{
 		}
 		infected_days <- int(infected_t/24);
 		
-		// Vaccine effect
+		// VACCINATION
 		if is_vaccinated{
 			vaccinated_days <- vaccinated_days + 1;
-			solve eqSIR method: mm step_size:h;
 			
-//			if(vaccinated_days = Revaccination_t*24){
-//				vaccine_doses <- 2;
-//				shedding_p <- shedding_p/(Vaccination_effect_I/Vaccination_effect_II);
-//				infection_p <- infection_p/(Vaccination_effect_I/Vaccination_effect_II);
-//			}
-//			if (vaccinated_days > Vaccination_decay){ // vaccine effect decay
-//				is_vaccinated <- false;
+			// Boolean Vaccinaiton decay
+			if(vaccinated_days = Revaccination_t*24){
+				vaccine_doses <- 2;
+				Vaccine_e <- 1 - Vi_second_dose;
+				x_Vaccine <- 1.0;
+//				shedding_p <- shedding_p/(Vi_first_dose/Vi_second_dose);
+//				infection_p <- infection_p/(Vi_first_dose/Vi_second_dose);
+			}
+			if (vaccinated_days > Vaccination_decay){ // vaccine effect decay
+				is_vaccinated <- false;
+				Vaccine_e <- 1.0;
 //				shedding_p <- shedding_p/(1 - Vaccine_effect);
 //				infection_p <- infection_p/(1 - Vaccine_effect);
-//			}
+			}
 			
-			if(vaccinated_days = Revaccination_t*24){
-			MVi <- Vi_second_dose;
-			dVi <- MVi -Vi;
-		}
-		if(vaccinated_days = Immunity_decay_t*24){
-			vi_decay <- 0.05;
-		}
+//			// Continous vaccination decay
+//			solve eqSIR method: mm step_size:h;
+//			
+//			if(vaccinated_days = Revaccination_t*24){
+//			MVi <- Vi_second_dose;
+//			dVi <- MVi -Vi;
+//		}
+//		if(vaccinated_days = Immunity_decay_t*24){
+//			vi_decay <- 0.05;
+//		}
 		}
 	}
 }

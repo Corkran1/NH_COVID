@@ -519,6 +519,14 @@ memory response (from [@Kim2020]:
   
   
   
+# TARGET PARAMETERS:  
+  
+  - Transmission rate
+  - Probability of introduction
+  - Detection probability
+  - Effect of PPE
+  
+  
 
 # Objectives:
 
@@ -527,8 +535,6 @@ memory response (from [@Kim2020]:
   - Explore scenarios where asymptomatic infected individuals are allowed to work due to staff shortages. Is it doable? maybe ramping up the testing to makeup for the fact that asymptomatic staff is working.  
   
 !!!!!!!!!!!!!!!!!!!!!! Next steps: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
- * Add probability of transmission = P(Shedding) x P(getting the virus)
  
  * Improve the hospitalization part, have a look at the Yolo dashboad https://www.yolocounty.org/health-human-services/adults/communicable-disease-investigation-and-control/novel-coronavirus-2019/dashboard-and-documents
   

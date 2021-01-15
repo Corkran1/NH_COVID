@@ -46,8 +46,8 @@ Transmission parameters:
 | Name                     | Value            | Reference|
 |--------------------------|------------------|----------|
 | Latent period ($\lambda$)| $Lognormal(7, 3)$| [@He2020]$^{b,c}$|
-| Shedding probability     | $0.4$            | $^a$     |
-| Infection probability    | $0.4$            | $^a$     |
+| Shedding probability     | $0.5$            | $^a$     |
+| Infection probability    | $0.5$            | $^a$     |
 | Introduction probability | $0.01$           | $^a$     |
 | Asymptomatic probability | $0.25$           | $^a$     |
 | Infection duration       | $15\ days$       |      |
@@ -61,7 +61,7 @@ We explore 3 different COVID-19 control strategies and the combination of them. 
 The equation 1 shows the effect of *PPE effect* and *Vaccine effect* on the transmission probability, where $odds_\omega$ represent the global transmission probability for all agents, $OR_\gamma$ represent the odds ratio for the *PPE effect*, and $OR\pi$ is the *Vaccine effect*. This probability is computed for all agents at each step so we can have different probabilities of transmission based on the interventions each individual received.  
 
 $$p_T = \frac{e^{\ln(odds_\omega) + \ln(OR_\pi)+ \ln(OR_\upsilon)}}{1 + e^{\ln(odds_\omega) + \ln(OR_\pi)+ \ln(OR_\upsilon)}}$$
-For the implementation of the vaccination, we specified by the proportion of residents and staff vaccinated, and a fixed interval between the first and second dose. Then the vaccination immunity will have a decay of 120 days and the individual will no longer have the vaccination immunity protective effect.
+For the implementation of the vaccination, we specified by the proportion of residents and staff vaccinated, and a fixed interval between the first and second dose of 21 days. After the first dose, the agents will only obtain a 60% of the total immunity protection assumed to be conferred by the vaccine, then on the second dose the agents will have 100% of the assumed effect. Then the vaccination immunity will have a decay of 120 days and the individual will no longer have the vaccination immunity protective effect.
 
 Since there is still some uncertainty in the effect of the use of PPE and the vaccine for older population, we started with values that are within the range of reported values and then varied these values for the sensitivity analysis and scenario modeling.
 
@@ -78,7 +78,7 @@ Interventions parameters:
 
 | Name                     | Value              | Reference|
 |--------------------------|--------------------|----------|
-| Test detection probability| $75\%$            | $^a$     |
+| Test detection probability| $85\%$            | $^a$     |
 | Proportion of Staff tested| $90\%$            | $^a$     |
 | Proportion of Residents tested| $33.3%$       | $^a$     |
 | Frequency of testing     |   Weekly           | $^a$     |
@@ -90,30 +90,52 @@ $^a$Explored for sensitivity analysis and scenario modeling, $^b$truncated distr
 
 ### Scenario modeling
 
-To asses the effect of different combination of interventions we defined different scenarios. As December 2020, the vaccination has not been implemented yet in neither the residents or staff.
+<!-- To asses the effect of different combination of interventions we defined different scenarios. As December 2020, the vaccination has not been implemented yet in neither the residents or staff. -->
 
-  - Baseline Scenario S00: The baseline scenario follows the current interventions implemented in a typical nursery home. Testing is performed once a week to all the staff and one resident per room. Once that the resident is detected positive is sent to a isolation room, and in the case that one of the staff members test positive, it will be send home. Both the staff and residents are required to use PPE.  
-  - Scenario S01: This scenario focus on improving the testing capacity, Instead of testing the staff and residents weekly, they are tested every 3 days.  
-  - Scenario S02: This scenario also explores the improvement of the testing capacity, but instead of increasing the frequency of testing, it increases the proportion of residents tested from 1/3 to testing all the residents weekly.  
-  - Scenario S03: This scenario focus on the vaccination. The vaccine is distributed equally among residents and the staff.
-  - Scenario 04: In this scenario the staff is prioritized over the residents for vaccination.
+<!--   - Baseline Scenario: The baseline scenario follows the current interventions implemented in a typical nursery home. Testing is performed once a week to all the staff and one resident per room. Once that the resident is detected positive is sent to a isolation room, and in the case that one of the staff members test positive, it will be send home. Both the staff and residents are required to use PPE.   -->
+<!--   - Scenario S01: This scenario focus on improving the testing capacity, Instead of testing the staff and residents weekly, they are tested every 3 days.   -->
+<!--   - Scenario S02: This scenario also explores the improvement of the testing capacity, but instead of increasing the frequency of testing, it increases the proportion of residents tested from 1/3 to testing all the residents weekly.   -->
+<!--   - Scenario S03: This scenario focus on the vaccination. The vaccine is distributed equally among residents and the staff. -->
+<!--   - Scenario 04: In this scenario the staff is prioritized over the residents for vaccination. -->
   
-**Scenarios based on the different efficacy reported by the papers [@Baden2020] and [@Polack2020]**
-  - Vaccine is equally effective for both residents and staff [@Polack2020].  
-  - Vaccine is less effective in older population using Pfizer data 
-  - Vaccine is less effective in older using Moderna data
+#### Vaccine Effect:  
+
+To explore the vaccination implementation we considered 3 scenarios according to the current vaccine effect reported by the trials from the Moderna and Pfizer vaccine [@Baden2020; @Polack2020]. Since there is still some uncertainty about the effect of the vaccine in population >65 years, we defined 3 scenarios that explore the possible outcomes under 3 different assumptions:  
+  
+  - Scenario 00: The vaccine has the same effect both populations (>65 years and >65 years).  
+  - Scenario 01: The vaccine is less effective on populations >65 years parametrized according to the reported by [@Baden2020].  
+  - Scenario 02: The vaccine is less effective on populations >65 years parametrized according to the reported by [@Polack2020].  
+  
+The parameters used for the vaccine effect in the 3 scenarios are the following:
+
+|Scenario| $OR_{V,S}$|$OR_{V,R}$|$V_S$| $V_R$|
+|--------|-----------|----------|-----|------|
+|S00     |  0.0493   | 0.0493   | 80% |  20% |
+|S01     |  0.0434   | 0.0619   | 80% |  20% |
+|S02     |  0.0441   | 0.1357   | 80% |  20% |
+  
+  
+### Vaccine Distribution:
+  
+|Scenario| $OR_{V,S}$|$OR_{V,R}$|$V_S$| $V_R$|
+|--------|-----------|----------|-----|------|
+|S00     |  0.0441   | 0.1357   | 50% |  50% |
+|S01     |  0.0441   | 0.1357   | 80% |  20% |
+|S02     |  0.0441   | 0.1357   | 20% |  80% |
 
 
-|Scenario| $T_f$ |$T_r$|$T_s$| $V_e$| $V_d$   |$V_r$| $V_s$|
-|--------|-------|-----|-----|------|---------|-----|------|
-|S00     | Weekly|33.3%|100% | NA   | NA      | 0   |  0   |
-|S01     | 2 days|33.3%|100% | NA   | NA      | 0   |  0   |
-|S02     | Weekly|100% |100% | NA   | NA      | 0   |  0   |
-|S03     | Weekly|33.3%|100% | 85%  | 120 days| 60  |  60  |
-|S04     | Weekly|33.3%|100% | 85%  | 120 days| 20  |  100 |
+<!-- |Scenario| $T_f$ |$T_r$|$T_s$| $V_e$| $V_d$   |$V_r$| $V_s$| -->
+<!-- |--------|-------|-----|-----|------|---------|-----|------| -->
+<!-- |S00     | Weekly|33.3%|100% | NA   | NA      | 0   |  0   | -->
+<!-- |S01     | 2 days|33.3%|100% | NA   | NA      | 0   |  0   | -->
+<!-- |S02     | Weekly|100% |100% | NA   | NA      | 0   |  0   | -->
+<!-- |S03     | Weekly|33.3%|100% | 85%  | 120 days| 60% |  60% | -->
+<!-- |S04     | Weekly|33.3%|100% | 85%  | 120 days| 20% |  100%| -->
 
 
 $T_f$ Frequency of testing, $T_r$ Residents tested, $T_s$ Staff tested, $V_e$ Vaccination efficacy, $V_r$ Residents vaccinated, $V_s$ Staff vaccinated  
+
+\includegraphics{Figures/SensitivityAnalysis/Baseline}  
 
 # Results
 
@@ -143,24 +165,28 @@ We performed sensitivity analysis on some parameters to explore the influence on
     
 ## Scenario modeling
 
-<img src="Figures/Scenarios/Cumulative_Vaccine.png" width="400"/>
+<!--   - Strategic vaccination, focus on staff -->
+<!--   - Testing every 2 weeks -->
+<!--   - Testing every week -->
+<!--   - Is there a vaccination threshold -->
 
-<img src="Figures/Scenarios/Eradication_Vaccine.png" width="400"/>
-
-  - Strategic vaccination, focus on staff
-  - Testing every 2 weeks
-  - Testing every week
-  - Is there a vaccination threshold
   
+\includegraphics{Figures/Scenarios/Vaccination}  
   
+<!-- What happens if the vaccine is not as effective in older population? -->
+<!-- How can we distribute the vaccine more effective? should we focus on staff? When we focus on staff we block the staff resident transmission -->
+
+With 5% probability of introduction:  
+
+\includegraphics{Figures/Scenarios/VaccinationDist05}
   
-What happens if the vaccine is not as effective in older population?
-How can we distribute the vaccine more effective? should we focus on staff? When we focus on staff we block the staff resident transmission
+with 1% probability of introduction:  
 
-balance between testing and vaccination.
-Who should get more tests?
+\includegraphics{Figures/Scenarios/VaccinationDist01}
 
-|Scenario| 
+<!-- balance between testing and vaccination. -->
+<!-- Who should get more tests? -->
+
 
 
 <!-- Susceptible -->

@@ -1,10 +1,6 @@
 .RData
 .Rhistory
-Data/
 NH_COVID.Rproj
-Documentation/References/
-Documentation/Figures/FloorPlans.qgz
-
+Data
 .Rproj.user
-.Ruserdata
-
+Documentation/References

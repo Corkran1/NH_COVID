@@ -108,8 +108,9 @@ I00 <- CycleSums(D00) %>%
   mutate(Scenario = 'Baseline')
 ##### NUMBER OF INFECTED ####
 CumI_p <- rbind(I00) %>%
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
@@ -121,10 +122,11 @@ EpiL_p <- rbind(I00) %>%
   facet_grid(~Scenario) +
   ggtitle(" Epidemic duration")
 
-CumI_p; EpiL_p
+
 ggarrange(CumI_p, EpiL_p, ncol = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Baseline Scenario", color = "grey20", face = "bold", size = 14)) %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Baseline.png", width = 8, height = 4)
+  annotate_figure(text_grob("Baseline Scenario", color = "grey20", face = "bold", size = 14)) 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Baseline.png", width = 8, height = 4)
 ```
 
 
@@ -159,8 +161,9 @@ I02 <- CycleSums(D02) %>%
   mutate(Scenario = '95% Detection Probability')
 ##### NUMBER OF INFECTED ####
 CumI_p <- rbind(I00, I01, I02) %>%
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
@@ -174,8 +177,9 @@ EpiL_p <- rbind(I00, I01, I02) %>%
 
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Probability of Detection", color = "grey20", face = "bold", size = 14)) %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/ProbDetection.png", width = 9, height = 5)
+  annotate_figure(text_grob("Probability of Detection", color = "grey20", face = "bold", size = 14)) 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/ProbDetection.png", width = 9, height = 5)
 ```
 
 ## Introduction probability
@@ -207,9 +211,10 @@ I02 <- CycleSums(D02) %>%
   mutate(Scenario = '10% Introduction Probability')
 ##### NUMBER OF INFECTED ####
 CumI_p <- rbind(I00, I01, I02) %>%
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   mutate(Scenario = factor(Scenario, levels = c('1% Introduction Probability', '5% Introduction Probability', '10% Introduction Probability'))) %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
@@ -223,8 +228,9 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Probability of Introduction", color = "grey20", face = "bold", size = 14)) %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Introduction.png", width = 9, height = 5)
+  annotate_figure(text_grob("Probability of Introduction", color = "grey20", face = "bold", size = 14)) 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Introduction.png", width = 9, height = 5)
 ```
 ## Transmission probability
 
@@ -255,9 +261,10 @@ I02 <- CycleSums(D02) %>%
   mutate(Scenario = 'High transmission')
 ##### NUMBER OF INFECTED ####
 CumI_p <- rbind(I00, I01, I02) %>%
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   mutate(Scenario = factor(Scenario, levels = c('Low transmission', 'Medium transmission', 'High transmission'))) %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
@@ -271,8 +278,9 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Transmission rate", color = "grey20", face = "bold", size = 14)) %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Transmission.png", width = 9, height = 5)
+  annotate_figure(text_grob("Transmission rate", color = "grey20", face = "bold", size = 14)) 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Transmission.png", width = 9, height = 5)
 ```
 
 ## Effect of Face masks (PPE)
@@ -304,9 +312,10 @@ I02 <- CycleSums(D02) %>%
   mutate(Scenario = 'Low effective')
 ##### NUMBER OF INFECTED ####
 CumI_p <- rbind(I00, I01, I02) %>%
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   mutate(Scenario = factor(Scenario, levels = c('Higly effective', 'Medium effective', 'Low effective'))) %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
@@ -350,6 +359,7 @@ I02 <- CycleSums(D02) %>%
   mutate(Scenario = 'Moderna')
 ##### NUMBER OF INFECTED ####
 CumI_p <- rbind(I00, I01, I02) %>%
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) %>%
   ggplot() +
   geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
@@ -366,8 +376,9 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Vaccine Effect", color = "grey20", face = "bold", size = 14)) %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/Vaccination.png", width = 9, height = 5)
+  annotate_figure(text_grob("Vaccine Effect", color = "grey20", face = "bold", size = 14)) 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/Scenarios/Vaccination.png", width = 9, height = 5)
 ```
 
 
@@ -398,9 +409,10 @@ I02 <- CycleSums(D02) %>%
   mutate(Scenario = '3 days')
 ##### NUMBER OF INFECTED ####
 CumI_p <- rbind(I00, I01, I02) %>%
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   mutate(Scenario = factor(Scenario, levels = c('7 days', '5 days', '3 days'))) %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
@@ -414,8 +426,9 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Testing Frequency", color = "grey20", face = "bold", size = 14)) %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/TestingFreq.png", width = 9, height = 5)
+  annotate_figure(text_grob("Testing Frequency", color = "grey20", face = "bold", size = 14)) 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/Scenarios/TestingFreq.png", width = 9, height = 5)
 ```
 
 ## Vaccine distribution
@@ -546,8 +559,9 @@ I00 <- CycleSums(D00) %>%
   mutate(Scenario = 'Test')
 ##### NUMBER OF INFECTED ####
 CumI_p <- rbind(I00) %>%
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
@@ -560,7 +574,7 @@ EpiL_p <- rbind(I00) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, ncol = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Baseline Scenario", color = "grey20", face = "bold", size = 14)) 
+  annotate_figure(text_grob("TEST Scenario", color = "grey20", face = "bold", size = 14)) 
 ```
 
 

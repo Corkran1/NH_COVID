@@ -94,6 +94,7 @@ TE_data <- function(data){
     filter(day == max(day))
 }
 ```
+
 # Baseline
 
 ```{r}
@@ -532,6 +533,36 @@ rbind(I00, I01, I02, I03, I04, I05) %>%
 
 
 # |------ Legacy Code (prvious work) ------|
+
+# |===TEST====|
+```{r}
+p <- "../../Data/SimsOut/Test/"
+ColPal <- c("grey70")
+### 75% Detection Probability
+D00 <- ReadSims(p)
+S00 <- PlotCycles(D00, var = "I", col = "red3")
+I00 <- CycleSums(D00) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Test')
+##### NUMBER OF INFECTED ####
+CumI_p <- rbind(I00) %>%
+  ggplot() +
+  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  scale_fill_manual(values = ColPal) +
+  ylab("Infection rate") +
+  ggtitle("Epidemic Size")
+##### EPIDEMIC LENGTH ####
+EpiL_p <- rbind(I00) %>% 
+  ggplot() +
+  geom_histogram(aes(day, fill = Scenario)) +
+  scale_fill_manual(values = ColPal) +
+  facet_grid(~Scenario) +
+  ggtitle(" Epidemic duration")
+
+ggarrange(CumI_p, EpiL_p, ncol = 2, common.legend = T) %>%
+  annotate_figure(text_grob("Baseline Scenario", color = "grey20", face = "bold", size = 14)) 
+```
+
 
 ## Use of PPE
 

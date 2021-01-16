@@ -324,6 +324,51 @@ ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
 #   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/PPE.png", width = 9, height = 5)
 ```
 
+## Vaccine Effect
+
+```{r}
+p <- "../../Data/SimsOut/Scenarios/VaccineEffect/"
+ColPal <- c("#5C9669", "#6A918C", "#7280B3")
+### Same vaccine effect for residents and staff
+D00 <- ReadSims(paste0(p, "00/"))
+S00 <- PlotCycles(D00, var = "I", col = "red3")
+I00 <- CycleSums(D00) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Same vaccine effect')
+### Different vaccine effect for residents and staff (Pfizer)
+D01 <- ReadSims(paste0(p, "01/"))
+S01 <- PlotCycles(D01, var = "I", col = "red3")
+I01 <- CycleSums(D01) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Pfizer')
+### Different vaccine effect for residents and staff (Pfizer)
+D02 <- ReadSims(paste0(p, "02/"))
+S02 <- PlotCycles(D02, var = "I", col = "red3")
+I02 <- CycleSums(D02) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Moderna')
+##### NUMBER OF INFECTED ####
+CumI_p <- rbind(I00, I01, I02) %>%
+  mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) %>%
+  ggplot() +
+  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  scale_fill_manual(values = ColPal) +
+  ylab("Infection rate") +
+  ggtitle("Epidemic Size")
+##### EPIDEMIC LENGTH ####
+EpiL_p <- rbind(I00, I01, I02) %>% 
+  mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) %>%
+  ggplot() +
+  geom_histogram(aes(day, fill = Scenario)) +
+  scale_fill_manual(values = ColPal) +
+  facet_grid(~Scenario) +
+  ggtitle(" Epidemic duration")
+
+ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
+  annotate_figure(text_grob("Vaccine Effect", color = "grey20", face = "bold", size = 14)) %>%
+  ggsave(filename = "../../Documentation/Figures/Scenarios/Vaccination.png", width = 9, height = 5)
+```
+
 
 # Scenario Modeling
 
@@ -374,38 +419,39 @@ ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
 
 ## Vaccine distribution
 
-```{r}
-p <- "../../Data/SimsOut/Scenarios/VaccineDistrib/"
+```{r Low spread}
+p <- "../../Data/SimsOut/Scenarios/VaccineDistrib/VaccineDistrib_01/"
 ColPal <- c("#5C9669", "#6A918C", "#7280B3")
 ### Same vaccine effect for residents and staff
 D00 <- ReadSims(paste0(p, "00/"))
 S00 <- PlotCycles(D00, var = "I", col = "red3")
 I00 <- CycleSums(D00) %>%
   .$cycle_TTE %>%
-  mutate(Scenario = 'Equal distribution')
+  mutate(Scenario = 'I00')
 ### Different vaccine effect for residents and staff (Pfizer)
 D01 <- ReadSims(paste0(p, "01/"))
 S01 <- PlotCycles(D01, var = "I", col = "red3")
 I01 <- CycleSums(D01) %>%
   .$cycle_TTE %>%
-  mutate(Scenario = 'Staff priority')
+  mutate(Scenario = 'I01')
 ### Different vaccine effect for residents and staff (Pfizer)
 D02 <- ReadSims(paste0(p, "02/"))
 S02 <- PlotCycles(D02, var = "I", col = "red3")
 I02 <- CycleSums(D02) %>%
   .$cycle_TTE %>%
-  mutate(Scenario = 'Resident priority')
+  mutate(Scenario = 'I02')
 ##### NUMBER OF INFECTED ####
 CumI_p <- rbind(I00, I01, I02) %>%
-  mutate(Scenario = factor(Scenario, levels = c('Equal distribution', 'Staff priority', 'Resident priority'))) %>%
+  mutate(Scenario = factor(Scenario, levels = c('I00', 'I01', 'I02')),
+         Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
 ##### EPIDEMIC LENGTH ####
 EpiL_p <- rbind(I00, I01, I02) %>% 
-  mutate(Scenario = factor(Scenario, levels = c('Equal distribution', 'Staff priority', 'Resident priority'))) %>%
+  mutate(Scenario = factor(Scenario, levels = c('I00', 'I01', 'I02'))) %>%
   ggplot() +
   geom_histogram(aes(day, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
@@ -413,44 +459,44 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Vaccine Distribution", color = "grey20", face = "bold", size = 14)) %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/VaccinationDist.png", width = 9, height = 5)
+  annotate_figure(text_grob("Vaccine Distribution Low Community Transmission", color = "grey20", face = "bold", size = 14))  
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/Scenarios/VD_Low.png", width = 9, height = 5)
 ```
 
-## Vaccine Effect
-
-```{r}
-p <- "../../Data/SimsOut/Scenarios/VaccineEffect/"
+```{r Ve High spread}
+p <- "../../Data/SimsOut/Scenarios/VaccineDistrib/VaccineDistrib_05/"
 ColPal <- c("#5C9669", "#6A918C", "#7280B3")
 ### Same vaccine effect for residents and staff
-D00 <- ReadSims(paste0(p, "00/"))
-S00 <- PlotCycles(D00, var = "I", col = "red3")
-I00 <- CycleSums(D00) %>%
+D03 <- ReadSims(paste0(p, "00/"))
+S03 <- PlotCycles(D03, var = "I", col = "red3")
+I03 <- CycleSums(D03) %>%
   .$cycle_TTE %>%
-  mutate(Scenario = 'Same vaccine effect')
+  mutate(Scenario = 'I03')
 ### Different vaccine effect for residents and staff (Pfizer)
-D01 <- ReadSims(paste0(p, "01/"))
-S01 <- PlotCycles(D01, var = "I", col = "red3")
-I01 <- CycleSums(D01) %>%
+D04 <- ReadSims(paste0(p, "01/"))
+S04 <- PlotCycles(D04, var = "I", col = "red3")
+I04 <- CycleSums(D04) %>%
   .$cycle_TTE %>%
-  mutate(Scenario = 'Pfizer')
+  mutate(Scenario = 'I04')
 ### Different vaccine effect for residents and staff (Pfizer)
-D02 <- ReadSims(paste0(p, "02/"))
-S02 <- PlotCycles(D02, var = "I", col = "red3")
-I02 <- CycleSums(D02) %>%
+D05 <- ReadSims(paste0(p, "02/"))
+S05 <- PlotCycles(D05, var = "I", col = "red3")
+I05 <- CycleSums(D05) %>%
   .$cycle_TTE %>%
-  mutate(Scenario = 'Moderna')
+  mutate(Scenario = 'I05')
 ##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I00, I01, I02) %>%
-  mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) %>%
+CumI_p <- rbind(I03, I04, I05) %>%
+  mutate(Scenario = factor(Scenario, levels = c('I03', 'I04', 'I05')),
+         Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
+  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
 ##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I00, I01, I02) %>% 
-  mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) %>%
+EpiL_p <- rbind(I03, I04, I05) %>% 
+  mutate(Scenario = factor(Scenario, levels = c('I03', 'I04', 'I05'))) %>%
   ggplot() +
   geom_histogram(aes(day, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
@@ -458,9 +504,22 @@ EpiL_p <- rbind(I00, I01, I02) %>%
   ggtitle(" Epidemic duration")
 
 ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Vaccine Effect", color = "grey20", face = "bold", size = 14)) %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/Vaccination.png", width = 9, height = 5)
+  annotate_figure(text_grob("Vaccine Distribution High Community Transmission", color = "grey20", face = "bold", size = 14)) 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/Scenarios/VD_High.png", width = 9, height = 5)
 ```
+
+```{r}
+Nsim <- 30
+rbind(I00, I01, I02, I03, I04, I05) %>%
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s, 
+         InfectionRate = Cumulative_I/N,
+         HospRate = Cumulative_H/N) %>%
+  group_by(Scenario) %>%
+  summarise_at(.vars = c('InfectionRate', 'HospRate', 'day'), .funs = mean)
+```
+
+
 
 
 ## Scenario 1

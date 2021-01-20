@@ -91,7 +91,7 @@ TE_data <- function(data){
     summarise(I = max(I)) %>%
     group_by(Sim) %>%
     filter(I == max(I)) %>%
-    filter(day == max(day))
+    filter(day == min(day))
 }
 ```
 

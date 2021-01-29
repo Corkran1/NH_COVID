@@ -52,7 +52,9 @@ CycleSums <- function(sims){
     group_by(Sim) %>%
     filter(I == max(I)) %>%
     filter(cycle == max(cycle)) %>%
-    mutate(day = floor(cycle/24))
+    mutate(day = floor(cycle/24),
+           Cumulative_I = Cumulative_I_r + Cumulative_I_s,
+           InfectionRate = Cumulative_I/N)
   
   return(list(cycle_IQR = cycle_IQR, cycle_TTE = cycle_TTE))
 }
@@ -93,44 +95,185 @@ TE_data <- function(data){
     filter(I == max(I)) %>%
     filter(day == max(day))
 }
-```
 
-# Baseline
-
-```{r}
-p <- "../../Data/SimsOut/Baseline/"
-ColPal <- c("grey40")
-### 75% Detection Probability
-D00 <- ReadSims(p)
-S00 <- PlotCycles(D00, var = "I", col = "red3")
-I00 <- CycleSums(D00) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'Baseline')
-##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I00) %>%
-  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
+#### Plot the outputs ####
+#-------------------------------#
+Plots <- function(x, main = ''){
+  ##### NUMBER OF INFECTED ####
+  CumI_p <- x %>%
   ggplot() +
-  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
+  geom_boxplot(aes(y = InfectionRate, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
   ggtitle("Epidemic Size")
-##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I00) %>% 
-  ggplot() +
+  ##### EPIDEMIC LENGTH ####
+  EpiL_p <- x %>% 
+    ggplot() +
   geom_histogram(aes(day, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   facet_grid(~Scenario) +
   ggtitle(" Epidemic duration")
 
+  if(length(unique(x$Scenario)) == 1){
+    ggarrange(CumI_p, EpiL_p, ncol = 2, common.legend = T) %>%
+      annotate_figure(text_grob(main, color = "grey20", face = "bold", size = 14)) 
+  }else{
+    ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
+      annotate_figure(text_grob(main, color = "grey20", face = "bold", size = 14)) 
+  }
+}
 
-ggarrange(CumI_p, EpiL_p, ncol = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Baseline Scenario", color = "grey20", face = "bold", size = 14)) 
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Baseline.png", width = 8, height = 4)
+#### Summary table ####
+#-------------------------------#
+Sum_Tbl <- function(x){
+  x %>%
+    group_by(Scenario) %>%
+    summarise_at(.vars = c('InfectionRate', 'day', 'Cumulative_I', 'Cumulative_I_r', 'Cumulative_I_s', 'Cumulative_H'), .funs = c(m = median, Q25 = Q25, Q75 = Q75)) %>%
+    mutate(across(where(is.numeric), ~round(., 4)),
+           InfectionRate = paste0(InfectionRate_m, ' (', InfectionRate_Q25, ',', InfectionRate_Q75, ')'),
+           day = paste0(day_m, ' (', day_Q25, ',', day_Q75, ')'),
+           Cumulative_I = paste0(Cumulative_I_m, ' (', Cumulative_I_Q25, ',', Cumulative_I_Q75, ')'),
+           Cumulative_I_r = paste0(Cumulative_I_r_m, ' (', Cumulative_I_r_Q25, ',', Cumulative_I_r_Q75, ')'),
+           Cumulative_I_s = paste0(Cumulative_I_s_m, ' (', Cumulative_I_s_Q25, ',', Cumulative_I_s_Q75, ')'),
+           Cumulative_H = paste0(Cumulative_H_m, ' (', Cumulative_H_Q25, ',', Cumulative_H_Q75, ')'),) %>%
+    select(Scenario, day, InfectionRate, Cumulative_I, Cumulative_I_r, Cumulative_I_s, Cumulative_H)
+}
 ```
 
 
+```{r Test}
+p <- "../../Data/SimsOut/Test/"
+ColPal <- c("grey40")
+### Test
+Db <- ReadSims(p)
+Sb <- PlotCycles(Db, var = "I", col = "red3")
+Ib <- CycleSums(Db) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Baseline')
+
+BTbl <- Sum_Tbl(Ib)
+Plots(Ib, 'Baseline Scenario')
+```
+
+
+# Baseline
+
+| Name                     | Value              | Reference|
+|--------------------------|--------------------|----------|
+|Shedding probability      |    0.58            |          |
+|Transmission probability  |    0.58            |          |
+|Asymptomatic probability  |    0.25            |          |
+|Introduction probability  |    0.05            |          |
+|Test detection probability| $85\%$             | $^a$     |
+| Frequency of testing     |   Weekly           | $^a$     |
+| Proportion of Staff tested| $90\%$            | $^a$     |
+| Proportion of Residents tested| $33.3%$       | $^a$     |
+| PPE Effect ($OR_\pi$)    | 0.34089            |[@Chu2020]$^a$|
+| Proportion of Resident PPE| $95\%$            | $^a$     |
+| Proportion of Staff PPE  | $99\%$             | $^a$     |
+| Vaccine effect ($OR_\upsilon$)| 0.0493        |[@Pfizer2020]$^a$|
+| Vaccine effect ($OR_\upsilon$)| 0.0493        |[@Pfizer2020]$^a$|
+| Proportion of Resident Vaccine| $0\%$            | $^a$     |
+| Proportion of Staff Vaccine  | $0\%$             | $^a$     |
+| Vaccine immunity duration| $120\ days$        | $^a$         |
+|First dose effect        |     $60\%$          | $^a$         |
+
+
+```{r}
+p <- "../../Data/SimsOut/Baseline/"
+ColPal <- c("grey40")
+### 75% Detection Probability
+Db <- ReadSims(p)
+Sb <- PlotCycles(Db, var = "I", col = "red3")
+Ib <- CycleSums(Db) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Baseline')
+
+BTbl <- Sum_Tbl(Ib)
+BTbl
+Plots(Ib, 'Baseline Scenario') %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Baseline.png", width = 8, height = 4)
+```
+
+
+
 # Sensitivity analysis
+## Transmission probability
+
+00 - 0.54
+01 - 0.58
+02 - 0.64
+
+```{r Transmission}
+p <- "../../Data/SimsOut/SensitivityAnalysis/TransmissionProbability/"
+ColPal <- c("#B284E3", "grey40", "#F28C8C")
+### 3% Transmission Probability
+D00 <- ReadSims(paste0(p, "00/"))
+S00 <- PlotCycles(D00, var = "I", col = "red3")
+I00 <- CycleSums(D00) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Low transmission')
+### 7% Introduction Probability
+D01 <- ReadSims(paste0(p, "01/"))
+S01 <- PlotCycles(D01, var = "I", col = "red3")
+I01 <- CycleSums(D01) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'High transmission')
+# ### 10% Introduction Probability
+# D02 <- ReadSims(paste0(p, "02/"))
+# S02 <- PlotCycles(D02, var = "I", col = "red3")
+# I02 <- CycleSums(D02) %>%
+#   .$cycle_TTE %>%
+#   mutate(Scenario = 'High transmission')
+
+x <- rbind(I00, Ib, I01) %>%
+  mutate(Scenario = factor(Scenario, levels = c('Low transmission', 'Baseline', 'High transmission'))) 
+
+TTbl <- Sum_Tbl(x)
+
+x %>%
+  Plots('Transmission Probability') %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Transmission.png", width = 9, height = 5)
+```
+
+## Introduction probability
+
+00 - 0.01
+01 - 0.05
+02 - 0.1
+
+```{r Introduction}
+p <- "../../Data/SimsOut/SensitivityAnalysis/IntroductionProbability/"
+ColPal <- c("#704500", 'grey40', "#076600")
+### 1% Introduction Probability
+D00 <- ReadSims(paste0(p, "00/"))
+S00 <- PlotCycles(D00, var = "I", col = "red3")
+I00 <- CycleSums(D00) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = '1% Introduction Probability')
+### 10% Introduction Probability
+D01 <- ReadSims(paste0(p, "01/"))
+S01 <- PlotCycles(D01, var = "I", col = "red3")
+I01 <- CycleSums(D01) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = '10% Introduction Probability')
+### 10% Introduction Probability
+# D02 <- ReadSims(paste0(p, "02/"))
+# S02 <- PlotCycles(D02, var = "I", col = "red3")
+# I02 <- CycleSums(D02) %>%
+#   .$cycle_TTE %>%
+#   mutate(Scenario = '10% Introduction Probability')
+
+x <- rbind(I00, Ib, I01) %>%
+  mutate(Scenario = factor(Scenario, levels = c('1% Introduction Probability', 'Baseline', '10% Introduction Probability'))) 
+
+ITbl <- Sum_Tbl(x)
+ITbl
+
+x %>%
+  Plots(main = "Probability of Introduction") %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Introduction.png", width = 9, height = 5)
+```
 
 ## Detection probability
 
@@ -140,7 +283,7 @@ ggarrange(CumI_p, EpiL_p, ncol = 2, common.legend = T) %>%
 
 ```{r DetectionProbability SA}
 p <- "../../Data/SimsOut/SensitivityAnalysis/DetectionProbability/"
-ColPal <- c("#00827E", "#00CFB7", "#94F2EF")
+ColPal <- c("#00827E", 'grey40', "#00CFB7")
 ### 75% Detection Probability
 D00 <- ReadSims(paste0(p, "00/"))
 S00 <- PlotCycles(D00, var = "I", col = "red3")
@@ -152,142 +295,29 @@ D01 <- ReadSims(paste0(p, "01/"))
 S01 <- PlotCycles(D01, var = "I", col = "red3")
 I01 <- CycleSums(D01) %>%
   .$cycle_TTE %>%
-  mutate(Scenario = '85% Detection Probability')
-### 95% Detection Probability
-D02 <- ReadSims(paste0(p, "02/"))
-S02 <- PlotCycles(D02, var = "I", col = "red3")
-I02 <- CycleSums(D02) %>%
-  .$cycle_TTE %>%
   mutate(Scenario = '95% Detection Probability')
-##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I00, I01, I02) %>%
-  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
-  ggplot() +
-  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  ylab("Infection rate") +
-  ggtitle("Epidemic Size")
-##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I00, I01, I02) %>% 
-  ggplot() +
-  geom_histogram(aes(day, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  facet_grid(~Scenario) +
-  ggtitle(" Epidemic duration")
+### 95% Detection Probability
+# D02 <- ReadSims(paste0(p, "02/"))
+# S02 <- PlotCycles(D02, var = "I", col = "red3")
+# I02 <- CycleSums(D02) %>%
+#   .$cycle_TTE %>%
+#   mutate(Scenario = '95% Detection Probability')
 
+x <- rbind(I00, Ib, I01) %>%
+  mutate(Scenario = factor(Scenario, levels = c('75% Detection Probability', 'Baseline', '95% Detection Probability')))
 
-ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Probability of Detection", color = "grey20", face = "bold", size = 14)) 
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/ProbDetection.png", width = 9, height = 5)
-```
+DTbl <- Sum_Tbl(x)
 
-## Introduction probability
-
-00 - 0.01
-01 - 0.05
-02 - 0.1
-
-```{r Introduction}
-p <- "../../Data/SimsOut/SensitivityAnalysis/IntroductionProbability/"
-ColPal <- c("#704500", "#6E6A00", "#076600")
-### 1% Introduction Probability
-D00 <- ReadSims(paste0(p, "00/"))
-S00 <- PlotCycles(D00, var = "I", col = "red3")
-I00 <- CycleSums(D00) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = '1% Introduction Probability')
-### 5% Introduction Probability
-D01 <- ReadSims(paste0(p, "01/"))
-S01 <- PlotCycles(D01, var = "I", col = "red3")
-I01 <- CycleSums(D01) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = '5% Introduction Probability')
-### 10% Introduction Probability
-D02 <- ReadSims(paste0(p, "02/"))
-S02 <- PlotCycles(D02, var = "I", col = "red3")
-I02 <- CycleSums(D02) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = '10% Introduction Probability')
-##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I00, I01, I02) %>%
-  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
-  mutate(Scenario = factor(Scenario, levels = c('1% Introduction Probability', '5% Introduction Probability', '10% Introduction Probability'))) %>%
-  ggplot() +
-  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  ylab("Infection rate") +
-  ggtitle("Epidemic Size")
-##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I00, I01, I02) %>% 
-  mutate(Scenario = factor(Scenario, levels = c('1% Introduction Probability', '5% Introduction Probability', '10% Introduction Probability'))) %>%
-  ggplot() +
-  geom_histogram(aes(day, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  facet_grid(~Scenario) +
-  ggtitle(" Epidemic duration")
-
-ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Probability of Introduction", color = "grey20", face = "bold", size = 14)) 
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Introduction.png", width = 9, height = 5)
-```
-## Transmission probability
-
-00 - 0.3
-01 - 0.5
-02 - 0.7
-
-```{r Transmission}
-p <- "../../Data/SimsOut/SensitivityAnalysis/TransmissionProbability/"
-ColPal <- c("#B284E3", "#DE8ABE", "#F28C8C")
-### 1% Introduction Probability
-D00 <- ReadSims(paste0(p, "00/"))
-S00 <- PlotCycles(D00, var = "I", col = "red3")
-I00 <- CycleSums(D00) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'Low transmission')
-### 5% Introduction Probability
-D01 <- ReadSims(paste0(p, "01/"))
-S01 <- PlotCycles(D01, var = "I", col = "red3")
-I01 <- CycleSums(D01) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'Medium transmission')
-### 10% Introduction Probability
-D02 <- ReadSims(paste0(p, "02/"))
-S02 <- PlotCycles(D02, var = "I", col = "red3")
-I02 <- CycleSums(D02) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'High transmission')
-##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I00, I01, I02) %>%
-  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
-  mutate(Scenario = factor(Scenario, levels = c('Low transmission', 'Medium transmission', 'High transmission'))) %>%
-  ggplot() +
-  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  ylab("Infection rate") +
-  ggtitle("Epidemic Size")
-##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I00, I01, I02) %>% 
-  mutate(Scenario = factor(Scenario, levels = c('Low transmission', 'Medium transmission', 'High transmission'))) %>%
-  ggplot() +
-  geom_histogram(aes(day, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  facet_grid(~Scenario) +
-  ggtitle(" Epidemic duration")
-
-ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Transmission rate", color = "grey20", face = "bold", size = 14)) 
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Transmission.png", width = 9, height = 5)
+x %>%
+  Plots(main = "Probability of Detection") %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/ProbDetection.png", width = 9, height = 5)
 ```
 
 ## Effect of Face masks (PPE)
 
 00 - LB
 01 - Estimate
-02 - UB
+02 - UB (0.2408)
 
 ```{r FaceMasks}
 p <- "../../Data/SimsOut/SensitivityAnalysis/FaceMasks/"
@@ -303,83 +333,66 @@ D01 <- ReadSims(paste0(p, "01/"))
 S01 <- PlotCycles(D01, var = "I", col = "red3")
 I01 <- CycleSums(D01) %>%
   .$cycle_TTE %>%
-  mutate(Scenario = 'Medium effective')
-### 10% Introduction Probability
-D02 <- ReadSims(paste0(p, "02/"))
-S02 <- PlotCycles(D02, var = "I", col = "red3")
-I02 <- CycleSums(D02) %>%
-  .$cycle_TTE %>%
   mutate(Scenario = 'Low effective')
-##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I00, I01, I02) %>%
-  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
-  mutate(Scenario = factor(Scenario, levels = c('Higly effective', 'Medium effective', 'Low effective'))) %>%
-  ggplot() +
-  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  ylab("Infection rate") +
-  ggtitle("Epidemic Size")
-##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I00, I01, I02) %>% 
-  mutate(Scenario = factor(Scenario, levels = c('Higly effective', 'Medium effective', 'Low effective'))) %>%
-  ggplot() +
-  geom_histogram(aes(day, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  facet_grid(~Scenario) +
-  ggtitle(" Epidemic duration")
 
-ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Effect of PPE", color = "grey20", face = "bold", size = 14)) 
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/PPE.png", width = 9, height = 5)
+x <- rbind(I00, Ib, I01) %>%
+  mutate(Scenario = factor(Scenario, levels = c('Higly effective', 'Baseline', 'Low effective'))) 
+
+PPETbl <- Sum_Tbl(x)
+PPETbl
+x %>% 
+  Plots('Effect of PPE') %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/PPE.png", width = 9, height = 5)
 ```
 
 ## Vaccine Effect
 
 ```{r}
-p <- "../../Data/SimsOut/Scenarios/VaccineEffect/"
+p <- "../../Data/SimsOut/SensitivityAnalysis/VaccineEffect/"
+
 ColPal <- c("#5C9669", "#6A918C", "#7280B3")
 ### Same vaccine effect for residents and staff
-D00 <- ReadSims(paste0(p, "00/"))
+D00 <- ReadSims(paste0(p, "Equal/"))
 S00 <- PlotCycles(D00, var = "I", col = "red3")
 I00 <- CycleSums(D00) %>%
   .$cycle_TTE %>%
   mutate(Scenario = 'Same vaccine effect')
 ### Different vaccine effect for residents and staff (Pfizer)
-D01 <- ReadSims(paste0(p, "01/"))
+D01 <- ReadSims(paste0(p, "Pfizer/"))
 S01 <- PlotCycles(D01, var = "I", col = "red3")
 I01 <- CycleSums(D01) %>%
   .$cycle_TTE %>%
   mutate(Scenario = 'Pfizer')
 ### Different vaccine effect for residents and staff (Pfizer)
-D02 <- ReadSims(paste0(p, "02/"))
+D02 <- ReadSims(paste0(p, "Moderna/"))
 S02 <- PlotCycles(D02, var = "I", col = "red3")
 I02 <- CycleSums(D02) %>%
   .$cycle_TTE %>%
   mutate(Scenario = 'Moderna')
-##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I00, I01, I02) %>%
-  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
-  mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) %>%
-  ggplot() +
-  geom_boxplot(aes(y = Cumulative_I_r/N, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  ylab("Infection rate") +
-  ggtitle("Epidemic Size")
-##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I00, I01, I02) %>% 
-  mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) %>%
-  ggplot() +
-  geom_histogram(aes(day, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  facet_grid(~Scenario) +
-  ggtitle(" Epidemic duration")
 
-ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Vaccine Effect", color = "grey20", face = "bold", size = 14)) 
+x <- rbind(I00, I01, I02) %>%
+  mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) 
+
+Sum_Tbl(x)
+x %>%
+  Plots('Vaccine Effect')
 # %>%
 #   ggsave(filename = "../../Documentation/Figures/Scenarios/Vaccination.png", width = 9, height = 5)
 ```
+
+
+### Summary 
+
+```{r SA Summary}
+rbind(BTbl, TTbl, ITbl, DTbl, PPETbl) %>%
+  distinct() %>%
+write.csv(., "../../Documentation/Tables/SA_sum.csv", row.names = F)
+```
+
+```{r}
+TTbl
+```
+
 
 
 # Scenario Modeling
@@ -407,32 +420,17 @@ S02 <- PlotCycles(D02, var = "I", col = "red3")
 I02 <- CycleSums(D02) %>%
   .$cycle_TTE %>%
   mutate(Scenario = '3 days')
-##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I00, I01, I02) %>%
-  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
-  mutate(Scenario = factor(Scenario, levels = c('7 days', '5 days', '3 days'))) %>%
-  ggplot() +
-  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  ylab("Infection rate") +
-  ggtitle("Epidemic Size")
-##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I00, I01, I02) %>% 
-  mutate(Scenario = factor(Scenario, levels = c('7 days', '5 days', '3 days'))) %>%
-  ggplot() +
-  geom_histogram(aes(day, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  facet_grid(~Scenario) +
-  ggtitle(" Epidemic duration")
 
-ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Testing Frequency", color = "grey20", face = "bold", size = 14)) 
+rbind(I00, I01, I02) %>%
+  mutate(Scenario = factor(Scenario, levels = c('7 days', '5 days', '3 days'))) %>%
+  Plots('Testing Frequency')
 # %>%
 #   ggsave(filename = "../../Documentation/Figures/Scenarios/TestingFreq.png", width = 9, height = 5)
 ```
 
 ## Vaccine distribution
 
+### Low Community spread
 ```{r Low spread}
 p <- "../../Data/SimsOut/Scenarios/VaccineDistrib/VaccineDistrib_01/"
 ColPal <- c("#5C9669", "#6A918C", "#7280B3")
@@ -454,29 +452,16 @@ S02 <- PlotCycles(D02, var = "I", col = "red3")
 I02 <- CycleSums(D02) %>%
   .$cycle_TTE %>%
   mutate(Scenario = 'I02')
-##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I00, I01, I02) %>%
-  mutate(Scenario = factor(Scenario, levels = c('I00', 'I01', 'I02')),
-         Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
-  ggplot() +
-  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  ylab("Infection rate") +
-  ggtitle("Epidemic Size")
-##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I00, I01, I02) %>% 
-  mutate(Scenario = factor(Scenario, levels = c('I00', 'I01', 'I02'))) %>%
-  ggplot() +
-  geom_histogram(aes(day, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  facet_grid(~Scenario) +
-  ggtitle(" Epidemic duration")
 
-ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Vaccine Distribution Low Community Transmission", color = "grey20", face = "bold", size = 14))  
+rbind(I00, I01, I02) %>%
+  mutate(Scenario = factor(Scenario, levels = c('I00', 'I01', 'I02'))) %>%
+  Plots("Vaccine Distribution Low Community Transmission")
+
 # %>%
 #   ggsave(filename = "../../Documentation/Figures/Scenarios/VD_Low.png", width = 9, height = 5)
 ```
+
+### Med Community Spread
 
 ```{r Ve High spread}
 p <- "../../Data/SimsOut/Scenarios/VaccineDistrib/VaccineDistrib_05/"
@@ -499,26 +484,41 @@ S05 <- PlotCycles(D05, var = "I", col = "red3")
 I05 <- CycleSums(D05) %>%
   .$cycle_TTE %>%
   mutate(Scenario = 'I05')
-##### NUMBER OF INFECTED ####
-CumI_p <- rbind(I03, I04, I05) %>%
-  mutate(Scenario = factor(Scenario, levels = c('I03', 'I04', 'I05')),
-         Cumulative_I = Cumulative_I_r + Cumulative_I_s) %>%
-  ggplot() +
-  geom_boxplot(aes(y = Cumulative_I/N, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  ylab("Infection rate") +
-  ggtitle("Epidemic Size")
-##### EPIDEMIC LENGTH ####
-EpiL_p <- rbind(I03, I04, I05) %>% 
-  mutate(Scenario = factor(Scenario, levels = c('I03', 'I04', 'I05'))) %>%
-  ggplot() +
-  geom_histogram(aes(day, fill = Scenario)) +
-  scale_fill_manual(values = ColPal) +
-  facet_grid(~Scenario) +
-  ggtitle(" Epidemic duration")
 
-ggarrange(CumI_p, EpiL_p, nrow = 2, common.legend = T) %>%
-  annotate_figure(text_grob("Vaccine Distribution High Community Transmission", color = "grey20", face = "bold", size = 14)) 
+rbind(I03, I04, I05) %>%
+  mutate(Scenario = factor(Scenario, levels = c('I03', 'I04', 'I05'))) %>%
+  Plots("Vaccine Distribution High Community Transmission")
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/Scenarios/VD_High.png", width = 9, height = 5)
+```
+### High Community Spread
+
+```{r Ve Higher spread}
+p <- "../../Data/SimsOut/Scenarios/VaccineDistrib/VaccineDistrib_10/"
+ColPal <- c("#5C9669", "#6A918C", "#7280B3")
+### Same vaccine effect for residents and staff
+D03 <- ReadSims(paste0(p, "00/"))
+S03 <- PlotCycles(D03, var = "I", col = "red3")
+I03 <- CycleSums(D03) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'I03')
+### Different vaccine effect for residents and staff (Pfizer)
+D04 <- ReadSims(paste0(p, "01/"))
+S04 <- PlotCycles(D04, var = "I", col = "red3")
+I04 <- CycleSums(D04) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'I04')
+### Different vaccine effect for residents and staff (Pfizer)
+D05 <- ReadSims(paste0(p, "02/"))
+S05 <- PlotCycles(D05, var = "I", col = "red3")
+I05 <- CycleSums(D05) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'I05')
+
+rbind(I03, I04, I05) %>%
+  mutate(Scenario = factor(Scenario, levels = c('I03', 'I04', 'I05'))) %>%
+  Plots("Vaccine Distribution High Community Transmission")
+
 # %>%
 #   ggsave(filename = "../../Documentation/Figures/Scenarios/VD_High.png", width = 9, height = 5)
 ```

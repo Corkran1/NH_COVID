@@ -39,7 +39,7 @@ experiment MainGUI type:gui{
 		
 }
 
-experiment Batch type:batch repeat: 25 until: (Days_free > 24*7) or (cycle > SimLength){
+experiment Batch type:batch repeat: 20 until: (Days_free > 24*7) or (cycle > SimLength){
 }
 
 /* Insert your model definition here */

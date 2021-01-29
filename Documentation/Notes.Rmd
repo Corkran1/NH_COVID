@@ -528,6 +528,7 @@ memory response (from [@Kim2020]:
   
   
 
+
 # Objectives:
 
   - Testing once a week vs twice a week depending on community level transmission, how effective is it?
@@ -538,5 +539,44 @@ memory response (from [@Kim2020]:
  
  * Improve the hospitalization part, have a look at the Yolo dashboad https://www.yolocounty.org/health-human-services/adults/communicable-disease-investigation-and-control/novel-coronavirus-2019/dashboard-and-documents
   
+  
+# Multinomial distributions
+
+```{r}
+sample(x = c(0, 1, 2, 3), size = 100, prob = c(0.2, 0.1, 0.3, 0.4), replace = T) %>%
+  table() %>%
+  barplot()
+```
+
+
+# Notes from Jan meetings
+FOCUS OUR EXPLORATION TO TELL A CLEAR STORY
+
+Focus scenarios on:  
+  - Define clearly the baseline scenario
+  - Additional scenarios involving implementation of testing and vaccination.  
+    - Propose regular weekly testing of staff, resident testing will only take place if there is evidence of staff. If so, test all residents.  
+    
+Vaccine Distribution Scenarios:  
+  - 50% residents 50% staff
+  - 75/50
+  - 75/75  
+  
+Scenarios:  
+  1. Baseline  
+  2. Baseline + regular testing only staff (weekly); with sensitivity analysis on testing frequency.  
+  3. Baseline + regular testing + adding testing of residents when infected staff
+  4. scenario 2 plus 50%/50%
+  5. Scenario 2 plus 75%/50%  
+  6. Scenario 2 plus 75%/75%
+  
+|Scenario| Staff testing|Resident testing|$V_S$| $V_R$| Probability of introduction|
+|--------|--------------|----------------|-----|------|----------------------------|
+|Baseline|  Proactive   | None           | 0%  |  50% | 1%                         |
+|S01     |  Proactive   | Reactive       | 0%  |  20% | 1%                         |
+|S02     |  Proactive   | Reactive       | 20% |  80% | 1%                         |
+|S03     |  Proactive   | Reactive       | 50% |  50% | 5%                         |
+|S04     |  Proactive   | Reactive       | 75% |  50% | 5%                         |
+|S05     |  Proactive   | Reactive       | 75% |  75% | 5%                         |
 
 # References

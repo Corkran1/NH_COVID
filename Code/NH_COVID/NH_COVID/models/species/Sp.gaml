@@ -54,6 +54,7 @@ species People skills:[moving]{
 	
 	// Vaccine
 	float Vaccine_e <- 1.0;
+	float My_Vaccine_OR;
 	float x_Vaccine;
 	
 	
@@ -126,11 +127,11 @@ species People skills:[moving]{
 	reflex Disease_dynamics{
 		// update susceptibility
 		float odds_s <- GlobalShedding_p/(1-GlobalShedding_p); // compute the odds of the base probability of transmission [W]
-		float shedding_o <- exp(ln(odds_s) + ln(PPE_OR)*x_PPE + ln(Vaccination_OR)*x_Vaccine);
+		float shedding_o <- exp(ln(odds_s) + ln(PPE_OR)*x_PPE + ln(My_Vaccine_OR)*x_Vaccine);
 		shedding_p <-  shedding_o/(1 + shedding_o); //convert the odds to probability
 		
 		float odds_i <- GlobalShedding_p/(1-GlobalShedding_p); // compute the odds of the base probability of transmission
-		float infection_o <- exp(ln(odds_i) + ln(PPE_OR)*x_PPE + ln(Vaccination_OR)*x_Vaccine);
+		float infection_o <- exp(ln(odds_i) + ln(PPE_OR)*x_PPE + ln(My_Vaccine_OR)*x_Vaccine);
 		infection_p <-  infection_o/(1 + infection_o); //convert the odds to probability
 		
 //		shedding_p <- GlobalShedding_p*PPE_e*Vaccine_e;
@@ -184,7 +185,7 @@ species People skills:[moving]{
 			// Boolean Vaccinaiton decay
 			if(vaccinated_days = Revaccination_t*24){
 				vaccine_doses <- 2;
-				Vaccine_e <- 1 - Vi_second_dose;
+//				Vaccine_e <- 1 - Vi_second_dose;
 				x_Vaccine <- 1.0;
 //				shedding_p <- shedding_p/(Vi_first_dose/Vi_second_dose);
 //				infection_p <- infection_p/(Vi_first_dose/Vi_second_dose);

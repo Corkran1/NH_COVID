@@ -4,30 +4,41 @@ bibliography: References/References.bib
 output: pdf_document
 ---
 
+```{r include=FALSE}
+library(dplyr)
+```
+
+
 # Methods
+
+We present a spatial explicit stochastic agent based model that recreates the day to day dynamics in a typical nursery home during the COVID pandemic in the United States. We use an hourly time step resolution and we ran the model for 150 days or until the facility has been disease free for more than 7 days.
+
+Based on a phone interview done during summer 2020 with a nursery home, we collected data from the day to day activities during the COVID 19 pandemic. We incorporate the data from this interview with a literature review to parametrize our model.
 
 ## Population
 
-We present a spatial explicit stochastic agent based model that recreates the day to day dynamics in a typical nursery home during the COVID pandemic in the United States. We use an hourly time step resolution and we ran the model for 150 days.
-
 ### Population structure
 
-We used the floor plans and satellite imagery to recreate the spatial structure of a typical nursery home in the US (figure 1). The nursery home consist on 58 bedrooms designated for the residents, recreation areas (such as dining room, and activities rooms), and rooms for staff use. In the initial conditions there are 3 residents per room (total 174) and 170 staff divided into 3 different turns. The decision on the population distribution was based on information obtained from an interview with a nursery home in California.
+We used the floor plans and satellite imagery to recreate the spatial structure of a typical nursery home in the US (figure 1). The nursery home consist on 58 bedrooms designated for the residents, recreation areas (such as dining room, and activities rooms), and rooms for staff use.  There are two type of agents represented in our model, staff and residents. There are 3 residents per room (total 174) and 170 staff divided into 3 different turns (morning, afternoon, night). The decision on the population distribution was based on information obtained from an interview with a nursery home in California.
 
 <!-- <img src="Figures/NH_B.png" width="400"/>   -->
-\includegraphics{Figures/NH_B}
+\includegraphics[width=8cm]{Figures/NH_B}
 
 ### Population dynamics
 
-In our simulation, an agent can interact with other agents based on its location. Given the current guidelines of recommendations for long term care facilities, there are no visitations and the residents spend most of the day in their rooms, so they can only interact with their roommates and the staff. In our model each resident will have at least one interaction with the staff per day which is based on different contact rates depending on the staff type (CN, RN, LPN), The staff will have different contact rates that were parametrized according on the average number of resident contacts in a normal day (REFERENCE: Table shared via email??). The contact rates are presented in table from supplementary materials.
+In our simulation, an agent can interact with other agents based on its location. Given the current guidelines of recommendations for long term care facilities, there are no visitations and the residents spend most of the day in their rooms, so the resident agents in our simulation can only interact with their roommates and the staff.
+The staff agents can be one of three different types: Certified nurse (CN), Registered Nurses (RN) or Licensed practical nurse (LPN). Our model allows to specify the proportion of each type and work schedule for the staff agents. Depending on the type, the staff agents will have different number of contacts with the residents. The contact rates for each staff type were parametrized based on the average number of resident contacts in a regular day (REFERENCE: Table shared via email??). The staff agents are assigned to one of 3 different work schedules (morning, afternoon or night) and they spend 8 hours inside the nursery home and the rest of the time outside in the community. We only follow the agents inside the nursery home and when the agents are outside we assume that they all have the same probability of contacting other people. The contact rates and the staff schedule distribution used in our model are presented in table from supplementary materials.
 
-<!-- | Type of staff | Distribution of resident contacts per turn | -->
-<!-- |---------------|--------------------------------------------| -->
-<!-- | CN            | $x\sim Mult(n,\pi)$                      | -->
-<!-- | RN            | $x\sim Mult(n,\pi)$                      | -->
-<!-- | LPN           | $x\sim Mult(n,\pi)$                      | -->
+|Variable             |Distribution                                                             |
+|---------------------|-------------------------------------------------------------------------|
+|Work Schedule        |$Multinom \sim (X_{morning} = 0.4, X_{Afternoon} = 0.4, X_{Night} = 0.2)$|
+|Staff type           |$Multinom \sim (X_{CN} = 0.6, X_{RN} = 0.15, X_{LPN} = 0.15)$            |
+|CN contacts per hour |$Multinom \sim (X_0 = 0.7, X_1 = 0.3)$                                   |
+|RN contacts per hour |$Multinom \sim (X_0 = 0.25, X_1 = 0.75)$                                 |
+|LPN contacts per hour|$Multinom \sim (X_0 = 0.15, X_2 = 0.2, X_3 = 0.25, X_4 = 0.2, X_5 = 0.2)$|
 
-The staff agents are assigned to one of 3 different work schedules (morning, afternoon or night) and they spend 8 hours inside the nursery home and the rest of the time outside in the community. We only follow the agents inside the nursery home and when the agents are outside we assume that they all have the same probability of contacting other people.
+: Distribution of the Staff agent characteristics
+
 
 ### Disease dynamics:
 
@@ -39,10 +50,7 @@ All the agents start as susceptible and after 1 day there is a resident introduc
 
 <!-- <img src="Figures/DiseaseDynamics.png" width="600"/>   -->
 \includegraphics{Figures/DiseaseDynamics}
-
-
-Transmission parameters:
-
+  
 | Name                     | Value            | Reference|
 |--------------------------|------------------|----------|
 | Latent period ($\lambda$)| $Lognormal(7, 3)$| [@He2020]$^{b,c}$|
@@ -53,14 +61,15 @@ Transmission parameters:
 | Infection duration       | $15\ days$       |      |
 | Hospitalization rate     | $0.11$           |      |
 
-$^a$Explored for sensitivity analysis and scenario modeling, $^b$truncated distribution between a boundary of reasonable values, $^c$fitted to a distribution
+: Disease parameters. $^a$Explored for sensitivity analysis and scenario modeling, $^b$truncated distribution between a boundary of reasonable values, $^c$fitted to a distribution
+
 
 ## Interventions
 
 We explore 3 different COVID-19 control strategies and the combination of them. Each of the interventions have an impact in the transmission of the disease, interventions such as the use of PPE and vaccination reduces the probability of transmission affecting directly the *Shedding* and *Infection probability*, while the isolation affects the transmission indirectly stopping the agent to interact with other agents.
-The equation 1 shows the effect of *PPE effect* and *Vaccine effect* on the transmission probability, where $odds_\omega$ represent the global transmission probability for all agents, $OR_\gamma$ represent the odds ratio for the *PPE effect*, and $OR\pi$ is the *Vaccine effect*. This probability is computed for all agents at each step so we can have different probabilities of transmission based on the interventions each individual received.  
+The equation 1 shows the effect of *PPE effect* and *Vaccine effect* on the transmission probability, where $odds_\omega$ represent the global transmission probability for all agents, $OR_\pi$ represent the odds ratio for the *PPE effect*, $X_\pi$ represent the presence or absence of PPE, $OR\upsilon$ is the *Vaccine effect*, and $X_\upsilon$. This probability is computed for all agents at each step so we can have different probabilities of transmission based on the interventions each individual received.  
 
-$$p_T = \frac{e^{\ln(odds_\omega) + \ln(OR_\pi)+ \ln(OR_\upsilon)}}{1 + e^{\ln(odds_\omega) + \ln(OR_\pi)+ \ln(OR_\upsilon)}}$$
+$$p_T = \frac{e^{\ln(odds_\omega) + \ln(OR_\pi X_\pi)+ \ln(OR_\upsilon X_\upsilon)}}{1 + e^{\ln(odds_\omega) + \ln(OR_\pi X_\pi)+ \ln(OR_\upsilon  X_\upsilon)}}$$
 For the implementation of the vaccination, we specified by the proportion of residents and staff vaccinated, and a fixed interval between the first and second dose of 21 days. After the first dose, the agents will only obtain a 60% of the total immunity protection assumed to be conferred by the vaccine, then on the second dose the agents will have 100% of the assumed effect. Then the vaccination immunity will have a decay of 120 days and the individual will no longer have the vaccination immunity protective effect.
 
 Since there is still some uncertainty in the effect of the use of PPE and the vaccine for older population, we started with values that are within the range of reported values and then varied these values for the sensitivity analysis and scenario modeling.
@@ -69,8 +78,8 @@ Since there is still some uncertainty in the effect of the use of PPE and the va
 
 Our model represents the testing of the population with 2 different approaches:  
 
-  - Passive, individuals are tested once that they present symptoms, this approach is focused on the early detection of symptomatic individuals.
-  - Active, a proportion of individuals are tested with a given frequency. In baseline scenario, 1 resident per room and all the staff are tested weekly. If 1 of the residents in a room is detected positive, the rest of the residents in that room are also tested.
+  - Reactive, individuals are tested once that they present symptoms, this approach is focused on the early detection of symptomatic individuals.
+  - Proactive, a proportion of individuals are tested with a given frequency. In baseline scenario, 1 resident per room and all the staff are tested weekly. If 1 of the residents in a room is detected positive, the rest of the residents in that room are also tested.
   
 Once a individual has been detected positive is isolated. There are special isolation rooms for the residents and in the case of the staff they are sent home. Once the individual is tested negative it return to the facility.
     
@@ -78,7 +87,7 @@ Interventions parameters:
 
 | Name                     | Value              | Reference|
 |--------------------------|--------------------|----------|
-| Test detection probability| $85\%$            | $^a$     |
+| Test detection probability| $75\%$            | $^a$     |
 | Proportion of Staff tested| $90\%$            | $^a$     |
 | Proportion of Residents tested| $33.3%$       | $^a$     |
 | Frequency of testing     |   Weekly           | $^a$     |
@@ -86,7 +95,8 @@ Interventions parameters:
 | Vaccine effect ($OR_\upsilon$)| 0.0493        | [@Pfizer2020]$^a$|
 | Vaccine immunity duration| $120\ days$        | $^a$         |
 
-$^a$Explored for sensitivity analysis and scenario modeling, $^b$truncated distribution between a boundary of reasonable values, $^c$fitted to a distribution
+: Interventions parameters. $^a$Explored for sensitivity analysis and scenario modeling, $^b$truncated distribution between a boundary of reasonable values, $^c$fitted to a distribution
+
 
 ### Sensitivity analysis
 
@@ -102,9 +112,11 @@ The parameters used to explore the vaccine effect used are the following:
 
 |Scenario    | $OR_{V,S}$|$OR_{V,R}$|$V_S$| $V_R$|
 |------------|-----------|----------|-----|------|
-|Equal effect|  0.0493   | 0.0493   | 80% |  20% |
-|Pfizer      |  0.0434   | 0.0619   | 80% |  20% |
-|Moderna     |  0.0441   | 0.1357   | 80% |  20% |
+|Equal effect|  0.0493   | 0.0493   | 50% |  50% |
+|Pfizer      |  0.0434   | 0.0619   | 50% |  50% |
+|Moderna     |  0.0441   | 0.1357   | 50% |  50% |
+
+: Vaccine effect scenarios
 
 ### Scenario modeling
 
@@ -147,6 +159,10 @@ For the sensitivity analysis we parted from a baseline scenario following the cu
 
 \includegraphics{Figures/SensitivityAnalysis/Baseline}  
 
+```{r echo=FALSE}
+read.csv("Tables/SA_sum.csv") %>%
+  knitr::kable()
+```
 
 
 <!--   - Disease Parameters: -->
@@ -169,8 +185,12 @@ For the sensitivity analysis we parted from a baseline scenario following the cu
 \includegraphics{Figures/SensitivityAnalysis/PPE}  
     
 \includegraphics{Figures/Scenarios/Vaccination}  
-    
-    
+
+```{r include = F}
+kableExtra::kbl(read.csv("Tables/SA_sum.csv"), 'latex')
+```
+
+
 ## Scenario modeling
 
 To compare the different scenarios we looked at the cumulative infection rate and the outbreak duration. The disease impact was lower in scenarios where the probability of introduction was lower. Looking only at the scenarios with a low probability of introduction (00, 01, 02), we notice that the scenario where the resident vaccination is prioritized (02) has the smaller outbreaks. But when we look only at the scenarios with high probability of introduction (03, 04, 05), the scenario where the staff vaccination is prioritized (04) gives the smaller outbreaks.

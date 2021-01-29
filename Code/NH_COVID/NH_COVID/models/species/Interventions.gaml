@@ -78,7 +78,7 @@ species Interventions{
 		ask floor(p_vaccination_staff*Total_Staff) among Staff where(!each.is_vaccinated){
 			is_vaccinated <- true;
 			vaccinated_days <- 0;
-			Vaccine_e <- Vi_first_dose;
+//			Vaccine_e <- Vi_first_dose;
 			x_Vaccine <- 0.6;
 //			shedding_p <- shedding_p * (1-Vaccine_effect);
 //			infection_p <- infection_p * (1-Vaccine_effect);
@@ -88,7 +88,7 @@ species Interventions{
 		ask floor(p_vaccination_res*Total_Residents) among Residents where(!each.is_vaccinated){
 			is_vaccinated <- true;
 			vaccinated_days <- 0;
-			Vaccine_e <- Vi_first_dose;
+//			Vaccine_e <- Vi_first_dose;
 			x_Vaccine <- 0.6;
 //			shedding_p <- shedding_p * (1-Vaccine_effect);
 //			infection_p <- infection_p * (1-Vaccine_effect);

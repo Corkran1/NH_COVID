@@ -26,6 +26,104 @@ key_nh
 nh_data[nh_data == 'N'] <- 0
 nh_data[nh_data == 'Y'] <- 1
 ```
+# CMS data
+
+```{r}
+CMS <- read.csv("../../Data/CMS/COVID-19_Nursing_Home_Dataset-2.csv")
+```
+
+```{r}
+######### Positivity Rate function #########
+PlotPR <- function(State){
+  CMS_CA <- CMS  %>%
+    mutate(date = as.Date(Week.Ending, format = '%m/%d/%Y')) %>% 
+    filter(Provider.State == State)
+
+  PRate <- CMS_CA %>%
+    group_by(1) %>%
+    summarise_at(.vars = c('Residents.Weekly.Confirmed.COVID.19', 'Residents.Weekly.COVID.19.Deaths', 'Total.Number.of.Occupied.Beds', 'Staff.Weekly.Confirmed.COVID.19', 'Staff.Weekly.COVID.19.Deaths'), ~sum(., na.rm = T)) %>%
+    mutate(PRate = Residents.Weekly.Confirmed.COVID.19/Total.Number.of.Occupied.Beds) %>%
+    pull(PRate)
+
+  CMS_CA %>%
+    group_by(date) %>%
+    summarise_at(.vars = c('Residents.Weekly.Confirmed.COVID.19', 'Residents.Weekly.COVID.19.Deaths', 'Total.Number.of.Occupied.Beds', 'Staff.Weekly.Confirmed.COVID.19', 'Staff.Weekly.COVID.19.Deaths'), ~sum(., na.rm = T)) %>%
+    mutate(PRate = Residents.Weekly.Confirmed.COVID.19/Total.Number.of.Occupied.Beds) %>%
+    ggplot() +
+    geom_line(aes(x=date, y=PRate)) +
+    geom_hline(yintercept = PRate, lty = 2, col = 'red') +
+    ggtitle(paste0('Positivity rate ', State))
+}
+
+######### Case fatality #########
+PlotDR <- function(State){
+  CMS_CA <- CMS  %>%
+    mutate(date = as.Date(Week.Ending, format = '%m/%d/%Y')) %>% 
+    filter(Provider.State == State)
+
+  DRate <- CMS_CA %>%
+    group_by(1) %>%
+    summarise_at(.vars = c('Residents.Weekly.Confirmed.COVID.19', 'Residents.Weekly.COVID.19.Deaths', 'Total.Number.of.Occupied.Beds', 'Staff.Weekly.Confirmed.COVID.19', 'Staff.Weekly.COVID.19.Deaths'), ~sum(., na.rm = T)) %>%
+    mutate(DRate = Residents.Weekly.COVID.19.Deaths/Residents.Weekly.Confirmed.COVID.19) %>%
+    pull(DRate)
+
+  CMS_CA %>%
+    group_by(date) %>%
+    summarise_at(.vars = c('Residents.Weekly.Confirmed.COVID.19', 'Residents.Weekly.COVID.19.Deaths', 'Total.Number.of.Occupied.Beds', 'Staff.Weekly.Confirmed.COVID.19', 'Staff.Weekly.COVID.19.Deaths'), ~sum(., na.rm = T)) %>%
+    mutate(DRate = Residents.Weekly.COVID.19.Deaths/Residents.Weekly.Confirmed.COVID.19) %>%
+    ggplot() +
+    geom_line(aes(x=date, y=DRate)) +
+    geom_hline(yintercept = DRate, lty = 2, col = 'red') +
+    ggtitle(paste0('Death rate ', State))
+}
+```
+
+```{r}
+States <- unique(CMS$Provider.State)
+PRp <- lapply(States, function(x){
+  PlotPR(State = x)
+})
+
+L_DR <- lapply(States, PlotDR)
+```
+
+
+
+```{r}
+CMS_CA <- CMS  %>%
+  mutate(date = as.Date(Week.Ending, format = '%m/%d/%Y')) %>% 
+  filter(Provider.State == "IL")
+
+PRate <- CMS_CA %>%
+  group_by(1) %>%
+  summarise_at(.vars = c('Residents.Weekly.Confirmed.COVID.19', 'Residents.Weekly.COVID.19.Deaths', 'Total.Number.of.Occupied.Beds', 'Staff.Weekly.Confirmed.COVID.19', 'Staff.Weekly.COVID.19.Deaths'), ~sum(., na.rm = T)) %>%
+  mutate(PRate = Residents.Weekly.Confirmed.COVID.19/Total.Number.of.Occupied.Beds) %>%
+  pull(PRate)
+
+CMS_CA %>%
+  group_by(date) %>%
+  summarise_at(.vars = c('Residents.Weekly.Confirmed.COVID.19', 'Residents.Weekly.COVID.19.Deaths', 'Total.Number.of.Occupied.Beds', 'Staff.Weekly.Confirmed.COVID.19', 'Staff.Weekly.COVID.19.Deaths'), ~sum(., na.rm = T)) %>%
+  mutate(PRate = Residents.Weekly.Confirmed.COVID.19/Total.Number.of.Occupied.Beds) %>%
+  ggplot() +
+  geom_line(aes(x=date, y=PRate)) +
+  geom_hline(yintercept = PRate, lty = 2, col = 'red')
+```
+
+
+```{r}
+CMS_CA %>% 
+  group_by(Provider.Name, County) %>%
+  summarise(Resident_Cases = sum(Residents.Weekly.Confirmed.COVID.19), N_Residents = median(Total.Number.of.Occupied.Beds)) %>%
+  mutate(InfectionRate = Resident_Cases/N_Residents) %>%
+  arrange(desc(InfectionRate)) %>%
+  filter(InfectionRate < 1) %>%
+  ggplot() +
+  geom_boxplot(aes(InfectionRate, fill = County)) +
+  coord_flip()+
+  theme(legend.position = 'none')
+```
+
+
 
 Does all recent testing done of staff variables should sum the total tests done to the staff?
 
@@ -132,6 +230,17 @@ colnames(Yolo_ts)
 Yolo_ts %>%
   group_by(Provider.Name) %>%
   summarise(capacity = max(Total.Number.of.Occupied.Beds))
+```
+
+```{r}
+Yolo_ts %>%
+  group_by(Provider.Name) %>%
+  summarise(Resident_Cases = sum(Residents.Weekly.Confirmed.COVID.19), N_Residents = mean(Total.Number.of.Occupied.Beds)) %>%
+  mutate(InfectionRate = Resident_Cases/N_Residents) %>%
+  ggplot() +
+  geom_bar(aes(y=InfectionRate))
+
+  summarise_at(.vars = c(Residents.Total.Confirmed.COVID.19, Total.Number.of.Occupied.Beds, Staff.Total.Confirmed.COVID.19), .funs = sum)
 ```
 
 

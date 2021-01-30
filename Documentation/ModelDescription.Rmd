@@ -22,7 +22,12 @@ Based on a phone interview done during summer 2020 with a nursery home, we colle
 We used the floor plans and satellite imagery to recreate the spatial structure of a typical nursery home in the US (figure 1). The nursery home consist on 58 bedrooms designated for the residents, recreation areas (such as dining room, and activities rooms), and rooms for staff use.  There are two type of agents represented in our model, staff and residents. There are 3 residents per room (total 174) and 170 staff divided into 3 different turns (morning, afternoon, night). The decision on the population distribution was based on information obtained from an interview with a nursery home in California.
 
 <!-- <img src="Figures/NH_B.png" width="400"/>   -->
+
+\begin{figure}[h]
+\caption{Nursery home floor plans}
+\centering
 \includegraphics[width=8cm]{Figures/NH_B}
+\end{figure}
 
 ### Population dynamics
 
@@ -48,15 +53,19 @@ The introduction from the community to the facility depends on a parameter *Intr
 
 All the agents start as susceptible and after 1 day there is a resident introduced with the disease. Then we follow up for 150 days or until the disease has been absent for more than 14 simulation days. Once the transmission between a infectious agent to a susceptible agent has been successful, the susceptible agent becomes exposed and based on a distribution for the latent period $\lambda$, the agent becomes infectious after $\lambda$ number of days, which can be either symptomatic and asymptomatic. The agent can infect other agents only when its in the Infectious state, then they remain infectious during 15 days and they transition to recovered. The agents can transition to infectious to hospitalized at any moment based on the hospitalization rate. When the agents has been recovered they acquire infection immunity, which lasts for 120 days.
 
-<!-- <img src="Figures/DiseaseDynamics.png" width="600"/>   -->
-\includegraphics{Figures/DiseaseDynamics}
+\begin{figure}
+\caption{Disease states}
+\centering
+\includegraphics[width=10cm]{Figures/DiseaseDynamics}
+\end{figure}
+
   
 | Name                     | Value            | Reference|
 |--------------------------|------------------|----------|
 | Latent period ($\lambda$)| $Lognormal(7, 3)$| [@He2020]$^{b,c}$|
-| Shedding probability     | $0.5$            | $^a$     |
-| Infection probability    | $0.5$            | $^a$     |
-| Introduction probability | $0.01$           | $^a$     |
+| Shedding probability     | $0.45$           | $^a$     |
+| Infection probability    | $0.45$           | $^a$     |
+| Introduction probability | $0.5$            | $^a$     |
 | Asymptomatic probability | $0.25$           | $^a$     |
 | Infection duration       | $15\ days$       |      |
 | Hospitalization rate     | $0.11$           |      |
@@ -76,60 +85,62 @@ Since there is still some uncertainty in the effect of the use of PPE and the va
 
 ### Testing and isolation
 
-Our model represents the testing of the population with 2 different approaches:  
+Our model represents the testing of the population with 2 different approaches:
 
   - Reactive, individuals are tested once that they present symptoms, this approach is focused on the early detection of symptomatic individuals.
   - Proactive, a proportion of individuals are tested with a given frequency. In baseline scenario, 1 resident per room and all the staff are tested weekly. If 1 of the residents in a room is detected positive, the rest of the residents in that room are also tested.
   
-Once a individual has been detected positive is isolated. There are special isolation rooms for the residents and in the case of the staff they are sent home. Once the individual is tested negative it return to the facility.
+Once a individual has been detected positive is isolated. There are special isolation rooms for the residents and in the case of the staff they are sent home. Once the individual is tested negative they return to the facility.
     
 Interventions parameters:
 
-| Name                     | Value              | Reference|
-|--------------------------|--------------------|----------|
-| Test detection probability| $75\%$            | $^a$     |
+| Name                         | Value              | Reference|
+|------------------------------|--------------------|----------|
+| Proportion of staff using PPE| 0.9                |$^a$|
+| Proportion of residents using PPE| 0.75           |$^a$|
+| PPE Effect ($OR_\pi$)    | 0.34089            |[@Chu2020]$^a$|
+| Test detection probability| $80\%$            | $^a$     |
 | Proportion of Staff tested| $90\%$            | $^a$     |
 | Proportion of Residents tested| $33.3%$       | $^a$     |
 | Frequency of testing     |   Weekly           | $^a$     |
-| PPE Effect ($OR_\pi$)    | 0.34089            |[@Chu2020]$^a$|
 | Vaccine effect ($OR_\upsilon$)| 0.0493        | [@Pfizer2020]$^a$|
 | Vaccine immunity duration| $120\ days$        | $^a$         |
 
 : Interventions parameters. $^a$Explored for sensitivity analysis and scenario modeling, $^b$truncated distribution between a boundary of reasonable values, $^c$fitted to a distribution
 
 
-### Sensitivity analysis
+## Sensitivity analysis
 
-We performed sensitivity analysis on selected parameters to show the influence of these parameters on the outcomes. 
+We performed sensitivity analysis on selected parameters to show the influence of these parameters on the outcomes. We present the disease outcomes from our model summarized using plots and median and 95% confidence intervals for the days until the facility became disease free, infection rate, cumulative number of infected staff and residents and cummulative number of hospitalizations.
 
 To effect of the vaccine on reducing the transmission we parametrized the model according to the current vaccine effect reported by the trials from the Moderna and Pfizer vaccine [@Baden2020; @Polack2020]. Since there is still some uncertainty about the effect of the vaccine in population >65 years, we defined 3 scenarios that explore the possible outcomes under 3 different assumptions:  
   
-  - Equal effect: The vaccine has the same effect both populations (>65 years and >65 years).  
-  - Pfizer: The vaccine is less effective on populations >65 years parametrized according to the reported by [@Baden2020].  
+  - Equal effect: The vaccine has the same effect both populations (>65 years and >65 years).
+  - Pfizer: The vaccine is less effective on populations >65 years parametrized according to the reported by [@Baden2020].
   - Moderna: The vaccine is less effective on populations >65 years parametrized according to the reported by [@Polack2020].  
   
-The parameters used to explore the vaccine effect used are the following:
-
-|Scenario    | $OR_{V,S}$|$OR_{V,R}$|$V_S$| $V_R$|
-|------------|-----------|----------|-----|------|
-|Equal effect|  0.0493   | 0.0493   | 50% |  50% |
-|Pfizer      |  0.0434   | 0.0619   | 50% |  50% |
-|Moderna     |  0.0441   | 0.1357   | 50% |  50% |
+  
+|Scenario    | $OR_{V,S}$|$OR_{V,R}$| Reference    | 
+|------------|-----------|----------|--------------|
+|Equal effect|  0.0493   | 0.0493   | [@Baden2020] |
+|Pfizer      |  0.0434   | 0.0619   | [@Baden2020] |
+|Moderna     |  0.0441   | 0.1357   | [@Polack2020]|
 
 : Vaccine effect scenarios
-
+  
+  
 ### Scenario modeling
 
 To illustrate the applications of our model we wanted to answer the question "How should the resources should be distributed under two different levels of community transmission?". We defined as a low community transmission where the probability of introduction is 1% and high community transmission where the probability of introduction is 5%. Then we used the worst case scenario for the effect of the vaccine on the two age groups and looked at the disease outcomes including infection rate and time to duration of the outbreak.  
 
-|Scenario| $OR_{V,S}$|$OR_{V,R}$|$V_S$| $V_R$| Probability of introduction|
-|--------|-----------|----------|-----|------|----------------------------|
-|S00     |  0.0441   | 0.1357   | 50% |  50% | 1%                         |
-|S01     |  0.0441   | 0.1357   | 80% |  20% | 1%                         |
-|S02     |  0.0441   | 0.1357   | 20% |  80% | 1%                         |
-|S03     |  0.0441   | 0.1357   | 50% |  50% | 5%                         |
-|S04     |  0.0441   | 0.1357   | 80% |  20% | 5%                         |
-|S05     |  0.0441   | 0.1357   | 20% |  80% | 5%                         |
+<!-- |Scenario| $OR_{V,S}$|$OR_{V,R}$|$V_S$| $V_R$| Probability of introduction| -->
+<!-- |--------|-----------|----------|-----|------|----------------------------| -->
+<!-- |S00     |  0.0441   | 0.1357   | 50% |  50% | 1%                         | -->
+<!-- |S01     |  0.0441   | 0.1357   | 80% |  20% | 1%                         | -->
+<!-- |S02     |  0.0441   | 0.1357   | 20% |  80% | 1%                         | -->
+<!-- |S03     |  0.0441   | 0.1357   | 50% |  50% | 5%                         | -->
+<!-- |S04     |  0.0441   | 0.1357   | 80% |  20% | 5%                         | -->
+<!-- |S05     |  0.0441   | 0.1357   | 20% |  80% | 5%                         | -->
 
 
 <!-- To asses the effect of different combination of interventions we defined different scenarios. As December 2020, the vaccination has not been implemented yet in neither the residents or staff. -->
@@ -153,69 +164,97 @@ To illustrate the applications of our model we wanted to answer the question "Ho
 
 # Results
 
+## Baseline scenario
+
+The baseline scenario follows the current interventions implemented in a typical nursery home. The parameters for the population dynamics, disease transmission and interventions effect used for the baseline scenario are the ones presented on the tables 1, 2, and 3 respectively.  Testing is performed once a week to all the staff and one resident per room. Once that the resident is detected positive is sent to a isolation room, and in the case that one of the staff members test positive, it will be send home. Both the staff and residents are required to use PPE.  
+  
+The baseline scenarios is meant to represent the possible outcomes for an average nursery home under the current conditions in the US. Our baseline scenario shows a wide range of disease impact ranging from 7-56 days to disease control, and an infection rate ranging between 0.01 to 0.56.
+
+
+\begin{figure}
+\caption{Baseline scenario}
+\centering
+\includegraphics{Figures/SensitivityAnalysis/Baseline}
+\end{figure}
+
+
 ## Sensitivty analisis
 
-For the sensitivity analysis we parted from a baseline scenario following the current interventions implemented in a typical nursery home. Testing is performed once a week to all the staff and one resident per room. Once that the resident is detected positive is sent to a isolation room, and in the case that one of the staff members test positive, it will be send home. Both the staff and residents are required to use PPE. Then we varied some of the model parameters to explore the influence on the outbreak size and duration.
+The influence of different parameters in our model outcomes are presented in the table 5. 
 
-\includegraphics{Figures/SensitivityAnalysis/Baseline}  
 
 ```{r echo=FALSE}
 read.csv("Tables/SA_sum.csv") %>%
-  knitr::kable()
+  rename(`Days to eradication` = day, `Infection rate` = InfectionRate, `Total Infected` = Cumulative_I, `Infected residents` = Cumulative_I_r, `Infected staff` = Cumulative_I_s, `Hospitalizations` = Cumulative_H) %>%
+  knitr::kable(caption = 'Results from the sensitivity analysis using the median and 95% confidence intervals')
 ```
 
-
-<!--   - Disease Parameters: -->
-<!--     - Transmission probability (for both shedding and infection) -->
-<!--     - Introduction probability (low risk, medium risk, high risk) -->
-<!--   - Interventions -->
-<!--     - Frequency of testing (1 week, 5 days, 3 days) -->
-<!--     - Detection probability -->
-<!--     - PPE effect -->
-<!--     - Vaccine effect -->
-<!--     - Vaccine immunity decay -->
     
-<!-- <img src="Figures/SensitivityAnalysis/Transmission.png" width="600"/>   -->
+\begin{figure}
+\caption{Sensitivity analysis on the transmission parameter}
+\centering
 \includegraphics{Figures/SensitivityAnalysis/Transmission}  
-<!-- <img src="Figures/SensitivityAnalysis/Introduction.png" width="600"/>   -->
-\includegraphics{Figures/SensitivityAnalysis/Introduction}  
-<!-- <img src="Figures/SensitivityAnalysis/ProbDetection.png" width="600"/>   -->
-\includegraphics{Figures/SensitivityAnalysis/ProbDetection}  
-<!-- <img src="Figures/SensitivityAnalysis/PPE.png" width="600"/>   -->
-\includegraphics{Figures/SensitivityAnalysis/PPE}  
-    
-\includegraphics{Figures/Scenarios/Vaccination}  
+\end{figure}
 
-```{r include = F}
-kableExtra::kbl(read.csv("Tables/SA_sum.csv"), 'latex')
-```
+
+\begin{figure}
+\caption{Sensitivity analysis on the introduction probability}
+\centering
+\includegraphics{Figures/SensitivityAnalysis/Introduction}  
+\end{figure}
+
+
+\begin{figure}
+\caption{Sensitivity analysis on the probability of detection}
+\centering
+\includegraphics{Figures/SensitivityAnalysis/ProbDetection}  
+\end{figure}
+
+
+\begin{figure}
+\caption{Sensitivity analysis on the effect of the PPE}
+\centering
+\includegraphics{Figures/SensitivityAnalysis/PPE}  
+\end{figure}
+
+
+\begin{figure}
+\caption{Sensitivity analysis on the testing frequency}
+\centering
+\includegraphics{Figures/SensitivityAnalysis/TestingFreq}
+\end{figure}
+
+
+\begin{figure}
+\caption{Sensitivity analysis on the effect of vaccination}
+\centering
+\includegraphics{Figures/SensitivityAnalysis/VaccinationEf}  
+\end{figure}
 
 
 ## Scenario modeling
 
-To compare the different scenarios we looked at the cumulative infection rate and the outbreak duration. The disease impact was lower in scenarios where the probability of introduction was lower. Looking only at the scenarios with a low probability of introduction (00, 01, 02), we notice that the scenario where the resident vaccination is prioritized (02) has the smaller outbreaks. But when we look only at the scenarios with high probability of introduction (03, 04, 05), the scenario where the staff vaccination is prioritized (04) gives the smaller outbreaks.
+<!-- To compare the different scenarios we looked at the cumulative infection rate and the outbreak duration. The disease impact was lower in scenarios where the probability of introduction was lower. Looking only at the scenarios with a low probability of introduction (00, 01, 02), we notice that the scenario where the resident vaccination is prioritized (02) has the smaller outbreaks. But when we look only at the scenarios with high probability of introduction (03, 04, 05), the scenario where the staff vaccination is prioritized (04) gives the smaller outbreaks. -->
+
+\begin{figure}
+\caption{Scenario with lowe ccommunity transmission}
+\centering
+\includegraphics{Figures/Scenarios/VaccineDist}
+\end{figure}
+
+
+<!-- \begin{figure} -->
+<!-- \caption{Scenario with high community transmission} -->
+<!-- \centering -->
+<!-- \includegraphics{Figures/Scenarios/VD_High} -->
+<!-- \end{figure} -->
+
+
 
 <!-- What happens if the vaccine is not as effective in older population? -->
 <!-- How can we distribute the vaccine more effective? should we focus on staff? When we focus on staff we block the staff resident transmission -->
-
-With 5% probability of introduction:  
-
-\includegraphics{Figures/Scenarios/VD_High}
   
-with 1% probability of introduction:  
-
-\includegraphics{Figures/Scenarios/VD_Low}
-
-|Scenario| Mean Infection Rate| Mean Outbreak duration|
-|--------|--------------------|-----------------------|
-|00      |              0.004 | 10.26                 |
-|01      |              0.007 | 11.90                 |
-|02      |              0.002 | 9.33                  |
-|03      |              0.015 | 12.90                 |
-|04      |              0.009 | 12.66                 |
-|05      |              0.013 | 13.50                 |
-
-
+  
 <!-- balance between testing and vaccination. -->
 <!-- Who should get more tests? -->
 

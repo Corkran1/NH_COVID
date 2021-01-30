@@ -550,6 +550,9 @@ sample(x = c(0, 1, 2, 3), size = 100, prob = c(0.2, 0.1, 0.3, 0.4), replace = T)
 
 
 # Notes from Jan meetings
+
+## Fri Jan 22, 2021 ------------------------------
+
 FOCUS OUR EXPLORATION TO TELL A CLEAR STORY
 
 Focus scenarios on:  

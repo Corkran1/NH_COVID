@@ -12,7 +12,8 @@
  */
 
 model NH01
-import 'Parameters.gaml'
+//import 'Parametrization/Baseline.gaml'
+import 'Parametrization/Scenarios/TF/MI_7.gaml'
 import "species/Sp.gaml"
 import "species/Interventions.gaml"
 
@@ -51,8 +52,6 @@ global{
 	int InitialInfected <- 1;
 	float infection_distance <- 1.5#m;
 //	float GlobalTransmission_p <- 0.0;
-	float Hosp_rate <- 0.11;
-	float Res_Hospitalization <- 0.15/(24*5); // 
 //	float Res_Hospitalization <- 0.108/(24*5); //
 	int Infection_Duration <- 15;
 	
@@ -66,6 +65,9 @@ global{
 	int E_s <- 0 update: Staff count (each.is_infected);
 	int I <- 0 update: I_r + I_s; // Total Infected
 	int E <- 0 update: E_r + E_s; // Total Exposed
+	int D;
+	int Tests_r;
+	int Tests_s;
 	
 	int Cumulative_I;
 	int Cumulative_I_r;
@@ -223,12 +225,14 @@ global{
 	}
 	
 	reflex SaveResults when: ExportResults{
-		save [cycle, I, E, S_r, I_r, I_s, E_s, H, Cumulative_I_r, Cumulative_I_s, Cumulative_H] to: "../results/" + "/EC/EpiCurve" + int(self) +".csv" type:"csv" rewrite:false;
+		save [cycle, I, E, S_r, I_r, I_s, E_s, H, Cumulative_I_r, Cumulative_I_s, Cumulative_H, D, Tests_r, Tests_s] to: "../results/" + "/EC/EpiCurve" + int(self) +".csv" type:"csv" rewrite:false;
 	}
 	
 	reflex StopSim when:cycle > SimLength{
 		do pause;
 	}
+	
+	
 	
 	reflex DieOff when: (E_r + I_r + E_s + I_s) = 0{
 //		bool OutbreakEnded;

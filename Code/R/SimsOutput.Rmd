@@ -110,14 +110,17 @@ Plots <- function(x, main = ''){
   geom_boxplot(aes(y = InfectionRate, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   ylab("Infection rate") +
-  ggtitle("Epidemic Size")
+  ggtitle("Epidemic Size") +
+    theme_minimal() +
+    theme(axis.text.x = element_blank())
   ##### EPIDEMIC LENGTH ####
   EpiL_p <- x %>% 
     ggplot() +
   geom_histogram(aes(day, fill = Scenario)) +
   scale_fill_manual(values = ColPal) +
   facet_grid(~Scenario) +
-  ggtitle(" Epidemic duration")
+  ggtitle(" Epidemic duration") +
+    theme_minimal()
 
   if(length(unique(x$Scenario)) == 1){
     ggarrange(CumI_p, EpiL_p, ncol = 2, common.legend = T) %>%
@@ -133,21 +136,23 @@ Plots <- function(x, main = ''){
 Sum_Tbl <- function(x){
   x %>%
     group_by(Scenario) %>%
-    summarise_at(.vars = c('InfectionRate', 'day', 'Cumulative_I', 'Cumulative_I_r', 'Cumulative_I_s', 'Cumulative_H'), .funs = c(m = median, Q05 = Q05, Q95 = Q95)) %>%
+    summarise_at(.vars = c('InfectionRate', 'day', 'Cumulative_I', 'Cumulative_I_r', 'Cumulative_I_s', 'Cumulative_H', 'D'), .funs = c(m = median, Q05 = Q05, Q95 = Q95)) %>%
     mutate(across(where(is.numeric), ~round(., 2)),
            InfectionRate = paste0(InfectionRate_m, ' (', InfectionRate_Q05, ',', InfectionRate_Q95, ')'),
            day = paste0(day_m, ' (', day_Q05, ',', day_Q95, ')'),
            Cumulative_I = paste0(Cumulative_I_m, ' (', Cumulative_I_Q05, ',', Cumulative_I_Q95, ')'),
            Cumulative_I_r = paste0(Cumulative_I_r_m, ' (', Cumulative_I_r_Q05, ',', Cumulative_I_r_Q95, ')'),
            Cumulative_I_s = paste0(Cumulative_I_s_m, ' (', Cumulative_I_s_Q05, ',', Cumulative_I_s_Q95, ')'),
-           Cumulative_H = paste0(Cumulative_H_m, ' (', Cumulative_H_Q05, ',', Cumulative_H_Q95, ')'),) %>%
-    select(Scenario, day, InfectionRate, Cumulative_I, Cumulative_I_r, Cumulative_I_s, Cumulative_H)
+           Cumulative_H = paste0(Cumulative_H_m, ' (', Cumulative_H_Q05, ',', Cumulative_H_Q95, ')'),
+           Cumulative_D = paste0(D_m, ' (', D_Q05, ',', D_Q95, ')')) %>%
+    select(Scenario, day, InfectionRate, Cumulative_I, Cumulative_I_r, Cumulative_I_s, Cumulative_H, Cumulative_D)
 }
 ```
 
-!!!!! Chek reparametrization of PPE use distribution (suggested: 0.9 staff, 0.75 residents) and infection rates (start from 0.5)
+!!!!! Check reparametrization of PPE use distribution (suggested: 0.9 staff, 0.75 residents) and infection rates (start from 0.5)
 Make smaller epidemics with less PPE use (so the PPE effect impact becomes smaller)
 
+# Test
 ```{r Test}
 p <- "../../Data/SimsOut/Test/"
 ColPal <- c("grey40")
@@ -159,8 +164,16 @@ Ib <- CycleSums(Db) %>%
   mutate(Scenario = 'Baseline')
 
 BTbl <- Sum_Tbl(Ib)
-BTbl
 Plots(Ib, 'Baseline Scenario')
+Sb
+BTbl
+```
+
+
+```{r}
+Plots(Ib, 'Baseline Scenario')
+Sb
+BTbl
 ```
 
 
@@ -168,15 +181,15 @@ Plots(Ib, 'Baseline Scenario')
 
 | Name                     | Value              | Reference|
 |--------------------------|--------------------|----------|
-|Shedding probability      |    0.56            |          |
-|Transmission probability  |    0.56            |          |
+|Shedding probability      |    0.41            |          |
+|Transmission probability  |    0.41            |          |
 |Asymptomatic probability  |    0.25            |          |
-|Introduction probability  |    0.1            |          |
+|Introduction probability  |    0.1             |          |
 |Test detection probability| $80\%$             | $^a$     |
 | Frequency of testing     |   Weekly           | $^a$     |
 | Proportion of Staff tested| $90\%$            | $^a$     |
 | Proportion of Residents tested| $33.3%$       | $^a$     |
-| PPE Effect ($OR_\pi$)    | 0.34089            |[@Chu2020]$^a$|
+| PPE Effect ($OR_\pi$)    | 0.1467            |[@Chu2020]$^a$|
 | Proportion of Resident PPE| $95\%$            | $^a$     |
 | Proportion of Staff PPE  | $99\%$             | $^a$     |
 | Vaccine effect ($OR_\upsilon$)| 0.0493        |[@Pfizer2020]$^a$|
@@ -187,20 +200,45 @@ Plots(Ib, 'Baseline Scenario')
 |First dose effect        |     $60\%$          | $^a$         |
 
 
+	 float Res_Hospitalization <- 0.23/(24*5); // 
+	 float BaseMortality <- 0.118;
+	 
+	 // ~~~~~~~~~~~~~~~~~~~ || INTERVENTIONS || ~~~~~~~~~~~~~~~~~~~~	
+	 int TestingFreq <- 7; // 7(3, 5)
+	 float Test_sensitivity <- 0.8; // Detection probability 0.75(0.85, 0.95)
+	 // ~~~~~~PPE USE~~~~~~~
+	 float PPE_OR <- 0.1467; // Odds ratio for the use of PPE  0.1467(0.0722, 0.3408)
+	 float p_PPE_res <- 0.75;
+	 float p_PPE_staff <- 0.9;
+	 // ~~~~~~Vaccination~~~~~
+     float Vaccination_OR_S <- 0.0493; // (M=0.0441, P=0.0434)
+	 float Vaccination_OR_R <- Vaccination_OR_S; //(M=0.1357, P=0.0619)
+	 float p_vaccination_res <- 0.0;
+	 float p_vaccination_staff <- 0.0;
+	 int Vaccination_decay <- 120*24;
+	 float First_dose_effect <- 0.6; // the first dose effect will be scaled by this constant.
+
+
 ```{r}
 p <- "../../Data/SimsOut/Baseline/"
 ColPal <- c("grey40")
-### 75% Detection Probability
-Db <- ReadSims(p)
-Sb <- PlotCycles(Db, var = "I", col = "red3")
-Ib <- CycleSums(Db) %>%
+### Baseline
+Bb <- ReadSims(p)
+BIp <- PlotCycles(Bb, var = "I", col = "red3")
+BCIp <- Bb %>%
+  mutate(CumI = Cumulative_I_r + Cumulative_I_s) %>% 
+  PlotCycles(., var = 'CumI', col = 'red3')
+
+Ib <- CycleSums(Bb) %>%
   .$cycle_TTE %>%
   mutate(Scenario = 'Baseline')
 
 BTbl <- Sum_Tbl(Ib)
+Plots(Ib, 'Baseline Scenario') 
+Sb
 BTbl
-Plots(Ib, 'Baseline Scenario') %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Baseline.png", width = 8, height = 4)
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Baseline.png", width = 8, height = 4)
 ```
 
 
@@ -208,9 +246,9 @@ Plots(Ib, 'Baseline Scenario') %>%
 # Sensitivity analysis
 ## Transmission probability
 
-00 - 0.54
-01 - 0.58
-02 - 0.64
+00 - 0.50
+01 - 0.52
+02 - 0.55
 
 ```{r Transmission}
 p <- "../../Data/SimsOut/SensitivityAnalysis/TransmissionProbability/"
@@ -238,18 +276,19 @@ x <- rbind(I00, Ib, I01) %>%
   mutate(Scenario = factor(Scenario, levels = c('Low transmission', 'Baseline', 'High transmission'))) 
 
 TTbl <- Sum_Tbl(x)
-TTbl
 x %>%
-  Plots('Transmission Probability') %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Transmission.png", width = 9, height = 5)
+  Plots('Transmission Probability') 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Transmission.png", width = 9, height = 5)
+TTbl
 ```
 
 
 ## Introduction probability
 
-00 - 0.01
-01 - 0.05
-02 - 0.1
+00 - 0.05
+01 - 0.1
+02 - 0.15
 
 ```{r Introduction}
 p <- "../../Data/SimsOut/SensitivityAnalysis/IntroductionProbability/"
@@ -277,18 +316,19 @@ x <- rbind(I00, Ib, I01) %>%
   mutate(Scenario = factor(Scenario, levels = c('Low Introduction Probability', 'Baseline', 'High Introduction Probability'))) 
 
 ITbl <- Sum_Tbl(x)
-ITbl
 
 x %>%
-  Plots(main = "Probability of Introduction") %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Introduction.png", width = 9, height = 5)
+  Plots(main = "Probability of Introduction")
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Introduction.png", width = 9, height = 5)
+ITbl
 ```
 
 ## Detection probability
 
 00 - 75% detection probability
-01 - 85% detection probability
-02 - 95% Detection probability
+01 - 80% detection probability
+02 - 90% Detection probability
 
 ```{r DetectionProbability SA}
 p <- "../../Data/SimsOut/SensitivityAnalysis/DetectionProbability/"
@@ -316,13 +356,14 @@ x <- rbind(I00, Ib, I01) %>%
   mutate(Scenario = factor(Scenario, levels = c('Low Detection Probability', 'Baseline', 'High Detection Probability')))
 
 DTbl <- Sum_Tbl(x)
-DTbl
 x %>%
-  Plots(main = "Probability of Detection") %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/ProbDetection.png", width = 9, height = 5)
+  Plots(main = "Probability of Detection") 
+#%>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/ProbDetection.png", width = 9, height = 5)
+DTbl
 ```
 
-## Effect of Face masks (PPE)
+## PPE Effect
 
 00 - LB
 01 - Estimate
@@ -348,14 +389,15 @@ x <- rbind(I00, Ib, I01) %>%
   mutate(Scenario = factor(Scenario, levels = c('High effect PPE', 'Baseline', 'Low effect PPE'))) 
 
 PPETbl <- Sum_Tbl(x)
-PPETbl
 x %>% 
-  Plots('Effect of PPE') %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/PPE.png", width = 9, height = 5)
+  Plots('Effect of PPE') 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/PPE.png", width = 9, height = 5)
+PPETbl
 ```
 
 
-## Testing Frequency
+## Testing Frequency ()
 
 ```{r}
 p <- "../../Data/SimsOut/SensitivityAnalysis/TestingFreq/"
@@ -379,8 +421,9 @@ x <- rbind(I00, Ib, I01) %>%
 TFTbl <- Sum_Tbl(x)
 TFTbl
 x %>% 
-  Plots('Testing Frequency') %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/TestingFreq.png", width = 9, height = 5)
+  Plots('Testing Frequency') 
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/TestingFreq.png", width = 9, height = 5)
 ```
 
 
@@ -413,10 +456,12 @@ x <- rbind(I00, I01, I02) %>%
   mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) 
 
 VeTbl <- Sum_Tbl(x)
-VeTbl
+
 x %>%
-  Plots('Vaccine Effect') %>%
-  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/VaccinationEf.png", width = 9, height = 5)
+  Plots('Vaccine Effect')
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/VaccinationEf.png", width = 9, height = 5)
+VeTbl
 ```
 
 
@@ -432,6 +477,107 @@ write.csv(., "../../Documentation/Tables/SA_sum.csv", row.names = F)
 
 
 # Scenario Modeling
+
+## Testing Frequency
+
+```{r}
+p <- "../../Data/SimsOut/Scenarios/TF/"
+d <- list.files(p, full.names = T)
+DL <- lapply(d, function(x){
+  D <- ReadSims(x) %>%
+    CycleSums(.) %>%
+    .$cycle_TTE %>%
+    mutate(Scenario = factor(gsub(p, '', x), levels = c('HI_7', 'HI_5', 'HI_3', 'MI_7', 'MI_5', 'MI_3', 'LI_7', 'LI_5', 'LI_3')))
+}) %>%
+  do.call(rbind,.)
+ColPal <- rainbow(9, s = 0.6)
+
+Plots(DL, main = 'Testing Frequency') %>%
+  ggsave(filename = "../../Documentation/Figures/Scenarios/TF.png", width = 9, height = 6)
+Sum_Tbl(DL) %>%
+  write.csv(., "../../Documentation/Tables/TF.csv", row.names = F)
+```
+
+
+## Vaccine Effect
+
+```{r}
+p <- "../../Data/SimsOut/Scenarios/VE/"
+d <- list.files(p, full.names = T)
+DL <- lapply(d, function(x){
+  D <- ReadSims(x) %>%
+    CycleSums(.) %>%
+    .$cycle_TTE %>%
+    mutate(Scenario = factor(gsub(p, '', x), levels = c('HI_E', 'HI_P', 'HI_M', 'MI_E', 'MI_P', 'MI_M', 'LI_E', 'LI_P', 'LI_M')))
+}) %>%
+  do.call(rbind,.)
+ColPal <- rainbow(9, s = 0.6)
+
+Plots(DL, main = 'Vaccine Effect') %>%
+  ggsave(filename = "../../Documentation/Figures/Scenarios/VE.png", width = 9, height = 6)
+Sum_Tbl(DL) %>%
+  write.csv(., "../../Documentation/Tables/VE.csv", row.names = F)
+```
+## Vaccine Distribution
+
+```{r}
+p <- "../../Data/SimsOut/Scenarios/VD/"
+d <- list.files(p, full.names = T)
+DL <- lapply(d, function(x){
+  D <- ReadSims(x) %>%
+    CycleSums(.) %>%
+    .$cycle_TTE %>%
+    mutate(Scenario = factor(gsub(p, '', x), levels = c('HI_E', 'HI_R', 'HI_S', 'MI_E', 'MI_R', 'MI_S', 'LI_E', 'LI_R', 'LI_S')))
+}) %>%
+  do.call(rbind,.)
+ColPal <- rainbow(9, s = 0.6)
+
+Plots(DL, main = 'Vaccine Distribution') %>%
+  ggsave(filename = "../../Documentation/Figures/Scenarios/VD.png", width = 9, height = 6)
+Sum_Tbl(DL) %>%
+  write.csv(., "../../Documentation/Tables/VD.csv", row.names = F)
+```
+
+
+________________________________________________________________________________________________
+
+
+
+```{r}
+p <- "../../Data/SimsOut/Scenarios/VE/"
+
+ColPal <- c("#5C9669", "#6A918C", "#7280B3")
+### Same vaccine effect for residents and staff
+D00 <- ReadSims(paste0(p, "Equal/"))
+S00 <- PlotCycles(D00, var = "I", col = "red3")
+I00 <- CycleSums(D00) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Same vaccine effect')
+### Different vaccine effect for residents and staff (Pfizer)
+D01 <- ReadSims(paste0(p, "Pfizer/"))
+S01 <- PlotCycles(D01, var = "I", col = "red3")
+I01 <- CycleSums(D01) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Pfizer')
+### Different vaccine effect for residents and staff (Pfizer)
+D02 <- ReadSims(paste0(p, "Moderna/"))
+S02 <- PlotCycles(D02, var = "I", col = "red3")
+I02 <- CycleSums(D02) %>%
+  .$cycle_TTE %>%
+  mutate(Scenario = 'Moderna')
+
+x <- rbind(I00, I01, I02) %>%
+  mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) 
+
+VeTbl <- Sum_Tbl(x)
+
+x %>%
+  Plots('Vaccine Effect')
+# %>%
+#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/VaccinationEf.png", width = 9, height = 5)
+VeTbl
+```
+
 
 
 ```{r}
@@ -611,6 +757,64 @@ rbind(I00, I01, I02, I03, I04, I05) %>%
 
 ## Scenario 2
 
+
+
+
+# Supplementari files
+
+## Observed vs simulated outbreaks
+
+```{r Observed}
+# Load and filter the CMS data
+CMS_CA <- read.csv("../../Data/CMS/COVID-19_Nursing_Home_Dataset-2.csv") %>%
+  mutate(date = as.Date(Week.Ending, format = '%m/%d/%Y')) %>% 
+  filter(Provider.State == "CA")
+
+# Format the data:
+CMSCA_ts <- CMS_CA %>% replace(is.na(.), 0) %>%
+  select(date, Provider = Federal.Provider.Number, Ir = Residents.Weekly.Confirmed.COVID.19, Is = Staff.Weekly.Confirmed.COVID.19, Dr = Residents.Weekly.COVID.19.Deaths, OccBeds = Total.Number.of.Occupied.Beds) %>%
+  arrange(Provider, date) %>%
+  group_by(Provider) %>%
+  mutate_at(.vars = c('Ir', 'Is', 'Dr'), .funs = c('cumsum', 'sum')) %>%
+  mutate(OccBeds = max(OccBeds), 
+         d = 1:n(), 
+         p_infection = Ir_sum/OccBeds, 
+         I = Ir + Is,
+         CumI = Ir_cumsum + Is_cumsum) %>%
+  filter(Ir_cumsum > 0, between(OccBeds, 100, 200),
+         Ir_sum != Ir_cumsum)
+
+pI <- CMSCA_ts %>%
+  group_by(d) %>%
+  summarise_at(.vars = c('I', 'CumI'), .funs = c(Median = median, Q25 = Q25, Q75 = Q75)) %>%
+  slice(-1) %>%
+  ggplot(aes(x = d)) +
+  geom_path(aes(y = I_Median), lwd = 1) +
+  geom_ribbon(aes(ymin = I_Q25, ymax = I_Q75), alpha = 0.3) +
+  labs(title = 'Observed number of confirmed cases', x = "Days from first confirmation", y = "Number of confirmed") +
+  theme_minimal()
+
+pCI <- CMSCA_ts %>%
+  group_by(d) %>%
+  summarise_at(.vars = c('I', 'CumI'), .funs = c(Median = median, Q25 = Q25, Q75 = Q75)) %>%
+  slice(-1) %>%
+  ggplot(aes(x = d)) +
+  geom_path(aes(y = CumI_Median), lwd = 1) +
+  geom_ribbon(aes(ymin = CumI_Q25, ymax = CumI_Q75), alpha = 0.3) +
+  labs(title = 'Cumulative observed number of confirmed cases', x = "Days from first confirmation", y = "Cumulative Number of confirmed") +
+  theme_minimal()
+```
+
+```{r simulated outbreaks}
+Bbs <- Bb %>% filter(day < 40)
+
+BIp <- PlotCycles(Bbs, var = "I", col = "red3")
+BCIp <- Bbs %>%
+  mutate(CumI = Cumulative_I_r + Cumulative_I_s) %>% 
+  PlotCycles(., var = 'CumI', col = 'red3')
+
+ggarrange(pI, pCI, BIp, BCIp)
+```
 
 
 

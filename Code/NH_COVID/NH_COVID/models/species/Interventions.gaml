@@ -10,7 +10,6 @@
 model Interventions
 
 import "../global.gaml"
-import "../global.gaml"
 
 species Interventions{
 	list<People> Infected_People <- [] update: (agents of_generic_species People where each.is_infectious);
@@ -20,8 +19,11 @@ species Interventions{
 	action ActiveSurveillance{
 		// Resident testing
 		if R_Testing and every(TestingFreq*24#cycle){ // test the residents every week
+//		int RoomsToTest <- length(Rooms where(each.Type = "Bedroom" and (length(each.CurrentRes) > 0)));
+//		if RoomsToTest > 0{
 			ask Rooms where(each.Type = "Bedroom" and (length(each.CurrentRes) > 0)){
 				Residents t_resident <- one_of(CurrentRes where(!each.hospitalized));
+				Tests_r <- Tests_r + 1;
 				if flip(Test_sensitivity) and t_resident.is_infected{
 					t_resident.detected <- true;
 					// If one of the residents positive, test the roomates.
@@ -33,6 +35,8 @@ species Interventions{
 				}
 //				write 'tested at day: ' + cycle/24;
 			}
+//		}
+			
 		}
 		
 		// Staff testing 
@@ -42,6 +46,7 @@ species Interventions{
 					detected <- true;
 					do die; // remove the staff member for now
 					}
+					Tests_s <- Tests_s + 1;
 				}
 		}
 	}
@@ -54,6 +59,7 @@ species Interventions{
 				if flip(Test_sensitivity) and is_infected{
 					detected <- true;
 				}
+				Tests_r <- Tests_r + 1;
 			}
 			
 		}

@@ -48,6 +48,7 @@ species People skills:[moving]{
 	bool hosp_patient; // will the patient require hospitalization?
 	bool is_hospitalized; //Are they hospitalized in the same building??
 	bool is_isolated;
+	float mortality <- BaseMortality;
 	// PPE
 	float PPE_e <- 1.0;
 	int x_PPE;
@@ -104,11 +105,14 @@ species People skills:[moving]{
 			if flip(self.infection_p){
 				is_infected <- true;
 				is_susceptible <- false;
-				latent_period <-int(lognormal_trunc_rnd(7, 3, 3, 12));
+				latent_period <-int(lognormal_trunc_rnd(3, 2, 2, 10));
+				if ExportResults{
+					save [cycle, name, latent_period] to: "../results/" + "/LP/LatentP" + int(seed) +".csv" type:"csv" rewrite:false;
+				}
 				infection_source <- "Facility";
-				max_hosp_days <- poisson(8); // how many days will the resident spend in hospital? (if hospitalized)
+				max_hosp_days <- poisson(6.5); // how many days will the resident spend in hospital? (if hospitalized) !!! REPORT on the MODEL description
 				infection_agent <- myself;
-				write string(myself) + " Infected " + self + ' at cycle:' + cycle;
+//				write string(myself) + " Infected " + self + ' at cycle:' + cycle;
 				if(self.people_type = 'staff'){
 					Cumulative_I_s <- Cumulative_I_s + 1;
 				} else if(self.people_type = 'resident'){
@@ -133,10 +137,6 @@ species People skills:[moving]{
 		float odds_i <- GlobalShedding_p/(1-GlobalShedding_p); // compute the odds of the base probability of transmission
 		float infection_o <- exp(ln(odds_i) + ln(PPE_OR)*x_PPE + ln(My_Vaccine_OR)*x_Vaccine);
 		infection_p <-  infection_o/(1 + infection_o); //convert the odds to probability
-		
-//		shedding_p <- GlobalShedding_p*PPE_e*Vaccine_e;
-//		transmission_p <- GlobalInfection_p*PPE_e*Vaccine_e;
-//		infection_p <- GlobalInfection_p*PPE_e*Vaccine_e;
 		
 		
 		if is_infected{
@@ -164,9 +164,12 @@ species People skills:[moving]{
 				location <- current_room.location;	
 				is_active <- false;
 				my_bedroom.CurrentRes >- self;
-				write string(self) + "Moved to Hospitalization";
+//				write string(self) + "Moved to Hospitalization";
 				Cumulative_H <- Cumulative_H + 1;
 			}
+			// ******State Transition H -> D
+			
+			
 			// ******State Transition I -> R
 			if infected_t > Infection_Duration*24{
 				is_infected <- false;
@@ -187,14 +190,10 @@ species People skills:[moving]{
 				vaccine_doses <- 2;
 //				Vaccine_e <- 1 - Vi_second_dose;
 				x_Vaccine <- 1.0;
-//				shedding_p <- shedding_p/(Vi_first_dose/Vi_second_dose);
-//				infection_p <- infection_p/(Vi_first_dose/Vi_second_dose);
 			}
 			if (vaccinated_days > Vaccination_decay){ // vaccine effect decay
 				is_vaccinated <- false;
 				Vaccine_e <- 1.0;
-//				shedding_p <- shedding_p/(1 - Vaccine_effect);
-//				infection_p <- infection_p/(1 - Vaccine_effect);
 			}
 			
 //			// Continous vaccination decay
@@ -268,11 +267,17 @@ species Residents parent:People{
 		hospitalization_t <- hospitalization_t + 1;
 		hospitalization_days <- int(hospitalization_t/24);
 		if hospitalization_days > max_hosp_days{
-			location <- my_bedroom.location;
-			is_active <- true;
-			hospitalized <- false;
-			hospitalization_t <- 0;
-			is_hospitalized <- false;
+			if flip(1 - mortality){
+				location <- my_bedroom.location;
+				is_active <- true;
+				hospitalized <- false;
+				hospitalization_t <- 0;
+				is_hospitalized <- false;
+			} else{
+				D <- D + 1;
+				do die;
+			}
+			
 		}
 		
 	}
@@ -312,6 +317,10 @@ species Staff parent:People{
 	 		location <- any_location_in(geometry(community_shp));
 	 		at_community <- true;
 	 	} else if is_active and at_community{ // Return to the NH
+	 	//Report the residents per turn
+	 	if ExportResults{
+	 		save [cycle, name, Type, ResTurn] to: "../results/" + "/S/RPT" + int(seed) +".csv" type:"csv" rewrite:false;
+	 	}
 	 		current_room <- one_of(Rooms where(each.Type = "Staff"));
 			location <- any_location_in(current_room);
 			ResTurn <- 0;
@@ -350,7 +359,7 @@ species Staff parent:People{
 	 					self.is_infected <- true;
 	 					infection_source <- 'staff';
 	 					Cumulative_I_r <- Cumulative_I_r + 1;
-	 					write string(myself) + ' Infected ' + self + ' at cycle:' + cycle;
+//	 					write string(myself) + ' Infected ' + self + ' at cycle:' + cycle;
 	 				}
 	 				
 	 			}

@@ -47,9 +47,10 @@ The staff agents can be one of three different types: Certified nurse (CN), Regi
 
 ### Disease dynamics:
 
-The transmission between agents inside the facility will depend on two parts, which are the probability that a person will shed the virus and the probability that another person will get the virus. We decided on model the transmission this way to represent scenarios where the infected and susceptible could have different combination of interventions (i.e. only infected received the intervention, only susceptible received the intervention, both received the intervention, etc..). The parametrization of the transmission parameters was based on observed outbreaks in nursery homes in California.
+The transmission between agents inside the facility will depend on two parts, which are the probability that a person will shed the virus and the probability that another person will get the virus.This transmission rates represent the probability that given that two individuals are in the same room for 1 hour are going to shed or infect with the virus depending on their disease state.
+We decided on model the transmission this way to represent scenarios where the infected and susceptible could have different combination of interventions (i.e. only infected received the intervention, only susceptible received the intervention, both received the intervention, etc..). The parametrization of the transmission parameters was based on observed outbreaks in nursery homes in California.  
 
-The introduction from the community to the facility depends on a parameter *Introduction\_p* that represents how likely is that a staff agent will be infected in the community. 
+The introduction from the community to the facility depends on a parameter *Introduction\_p* that represents the chance that one of the staff members will get infected from the disease at the community.
 
 All the agents start as susceptible and after 1 day there is a resident introduced with the disease. Then we follow up for 150 days or until the disease has been absent for more than 14 simulation days. Once the transmission between a infectious agent to a susceptible agent has been successful, the susceptible agent becomes exposed and based on a distribution for the latent period $\lambda$, the agent becomes infectious after $\lambda$ number of days, which can be either symptomatic and asymptomatic. The agent can infect other agents only when its in the Infectious state, then they remain infectious during 15 days and they transition to recovered. The agents can transition to infectious to hospitalized at any moment based on the hospitalization rate. When the agents has been recovered they acquire infection immunity, which lasts for 120 days.
 
@@ -62,7 +63,14 @@ All the agents start as susceptible and after 1 day there is a resident introduc
   
 | Name                     | Value            | Reference|
 |--------------------------|------------------|----------|
-| Latent period ($\lambda$)| $Lognormal(7, 3)$| [@He2020]$^{b,c}$|
+| Latent period ($\alpha$) | $Lognormal(7, 3)$| [@He2020]$^{b,c}$|
+| Asymptomatic ($f$)       | $0.25$           |          |
+| Average recovery time($\gamma_1$)| $15 days$|          |
+| Proportion of Hospitalizations ($\sigma_1$) | $0.23$|
+|Median number of days from symptom onset to hosp ($\gamma_2$) |
+
+
+
 | Shedding probability     | $0.45$           | $^a$     |
 | Infection probability    | $0.45$           | $^a$     |
 | Introduction probability | $0.5$            | $^a$     |
@@ -85,6 +93,7 @@ Since there is still some uncertainty in the effect of the use of PPE and the va
 
 ### Testing and isolation
 
+Other models have explored this more in detail, in our model we wanted to simplify and used this detection probability parameter to represent the chance that an individual that is tested for the disease will be correctly identified regardless which test is used.  
 Our model represents the testing of the population with 2 different approaches:
 
   - Reactive, individuals are tested once that they present symptoms, this approach is focused on the early detection of symptomatic individuals.
@@ -111,7 +120,40 @@ Interventions parameters:
 
 ## Sensitivity analysis
 
-We performed sensitivity analysis on selected parameters to show the influence of these parameters on the outcomes. We present the disease outcomes from our model summarized using plots and median and 95% confidence intervals for the days until the facility became disease free, infection rate, cumulative number of infected staff and residents and cummulative number of hospitalizations.
+We performed sensitivity analysis on selected parameters to show the influence of these parameters on the outcomes. We present the disease outcomes from our model summarized using plots and median and 95% confidence intervals for the days until the facility became disease free, infection rate, cumulative number of infected staff and residents and cumulative number of hospitalizations.
+
+| Scenario        | Target parameter                   |Value used|
+|-----------------|------------------------------------|----------|
+|Low transmission | Shedding and infection probability | 0.4      |
+|High transmission| Shedding and infection probability | 0.4      |
+|Low Introduction Probability| Introduction probability| 0.01    |
+|High Introduction Probability| Introduction probability| 0.15   |
+| Low Detection Probability | Detection probability    | 0.75 |
+| High Detection Probability | Detection probability   | 0.90 |
+| High effect PPE | PPE effect                         | 0.0493 |
+| Low effect PPE | PPE effect                          | 0.3408 |
+| Every 5 days   | Testing frequency                   |every 5 days  |
+| Every 3 days   | Testing frequency                   | every 3 days  |
+
+
+: Parameters used for sensitivity analysis
+
+
+<!-- ### Transmission rate. -->
+
+<!-- We used 3 levels of transmission rate in our model. For a low, medium and high transmission we assume that both shedding and infection probabilities are 0.4, 0.45 and 0.5 respectively.   -->
+
+<!-- ### Probability of introduction -->
+
+<!-- For our sensitivity analysis we used 0.01, 0.5, and 0.15. -->
+
+<!-- ### Detection probability  -->
+
+<!-- ### PPE -->
+
+<!-- The use of PPE in our model  -->
+
+### Effect of vaccination
 
 To effect of the vaccine on reducing the transmission we parametrized the model according to the current vaccine effect reported by the trials from the Moderna and Pfizer vaccine [@Baden2020; @Polack2020]. Since there is still some uncertainty about the effect of the vaccine in population >65 years, we defined 3 scenarios that explore the possible outcomes under 3 different assumptions:  
   
@@ -127,6 +169,9 @@ To effect of the vaccine on reducing the transmission we parametrized the model 
 |Moderna     |  0.0441   | 0.1357   | [@Polack2020]|
 
 : Vaccine effect scenarios
+
+
+### Vaccine distribution
   
   
 ### Scenario modeling
@@ -180,15 +225,13 @@ The baseline scenarios is meant to represent the possible outcomes for an averag
 
 ## Sensitivty analisis
 
-The influence of different parameters in our model outcomes are presented in the table 5. 
-
+The influence of different parameters in our model outcomes are presented in the table 6. 
 
 ```{r echo=FALSE}
 read.csv("Tables/SA_sum.csv") %>%
   rename(`Days to eradication` = day, `Infection rate` = InfectionRate, `Total Infected` = Cumulative_I, `Infected residents` = Cumulative_I_r, `Infected staff` = Cumulative_I_s, `Hospitalizations` = Cumulative_H) %>%
   knitr::kable(caption = 'Results from the sensitivity analysis using the median and 95% confidence intervals')
 ```
-
     
 \begin{figure}
 \caption{Sensitivity analysis on the transmission parameter}

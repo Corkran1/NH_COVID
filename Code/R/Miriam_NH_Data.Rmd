@@ -87,12 +87,51 @@ PRp <- lapply(States, function(x){
 L_DR <- lapply(States, PlotDR)
 ```
 
-
-
 ```{r}
 CMS_CA <- CMS  %>%
   mutate(date = as.Date(Week.Ending, format = '%m/%d/%Y')) %>% 
-  filter(Provider.State == "IL")
+  filter(Provider.State == "CA")
+
+CMSCA_ts <- CMS_CA %>% replace(is.na(.), 0) %>%
+  select(date, Provider = Federal.Provider.Number, Ir = Residents.Weekly.Confirmed.COVID.19, Is = Staff.Weekly.Confirmed.COVID.19, Dr = Residents.Weekly.COVID.19.Deaths, OccBeds = Total.Number.of.Occupied.Beds) %>%
+  arrange(Provider, date) %>%
+  group_by(Provider) %>%
+  mutate_at(.vars = c('Ir', 'Is', 'Dr'), .funs = c('cumsum', 'sum')) %>%
+  mutate(OccBeds = max(OccBeds), 
+         d = 1:n(), 
+         p_infection = Ir_sum/OccBeds, 
+         I = Ir + Is,
+         CumI = Ir_cumsum + Is_cumsum) %>%
+  filter(Ir_cumsum > 0, between(OccBeds, 100, 200),
+         Ir_sum != Ir_cumsum) 
+  # filter(Ir_sum > 0)
+
+pI <- CMSCA_ts %>%
+  group_by(d) %>%
+  summarise_at(.vars = c('I', 'CumI'), .funs = c(Median = median, Q25 = Q25, Q75 = Q75)) %>%
+  slice(-1) %>%
+  ggplot(aes(x = d)) +
+  geom_path(aes(y = I_Median), lwd = 1) +
+  geom_ribbon(aes(ymin = I_Q25, ymax = I_Q75), alpha = 0.3) +
+  labs(title = 'Observed number of confirmed cases', x = "Days from first confirmation", y = "Number of confirmed") +
+  theme_classic()
+
+pCI <- CMSCA_ts %>%
+  group_by(d) %>%
+  summarise_at(.vars = c('I', 'CumI'), .funs = c(Median = median, Q25 = Q25, Q75 = Q75)) %>%
+  slice(-1) %>%
+  ggplot(aes(x = d)) +
+  geom_path(aes(y = CumI_Median), lwd = 1) +
+  geom_ribbon(aes(ymin = CumI_Q25, ymax = CumI_Q75), alpha = 0.3) +
+  labs(title = 'Cumulative observed number of confirmed cases', x = "Days from first confirmation", y = "Cumulative Number of confirmed") +
+  theme_classic()
+
+ggarrange(pI, pCI, Sb, CumIS)
+```
+
+
+```{r}
+
 
 PRate <- CMS_CA %>%
   group_by(1) %>%

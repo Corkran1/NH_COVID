@@ -170,13 +170,6 @@ BTbl
 ```
 
 
-```{r}
-Plots(Ib, 'Baseline Scenario')
-Sb
-BTbl
-```
-
-
 # Baseline
 
 | Name                     | Value              | Reference|
@@ -234,11 +227,10 @@ Ib <- CycleSums(Bb) %>%
   mutate(Scenario = 'Baseline')
 
 BTbl <- Sum_Tbl(Ib)
-Plots(Ib, 'Baseline Scenario') 
+Plots(Ib, 'Baseline Scenario') %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Baseline.png", width = 8, height = 4)
 Sb
 BTbl
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Baseline.png", width = 8, height = 4)
 ```
 
 
@@ -277,9 +269,8 @@ x <- rbind(I00, Ib, I01) %>%
 
 TTbl <- Sum_Tbl(x)
 x %>%
-  Plots('Transmission Probability') 
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Transmission.png", width = 9, height = 5)
+  Plots('Transmission Probability') %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Transmission.png", width = 9, height = 5)
 TTbl
 ```
 
@@ -318,9 +309,8 @@ x <- rbind(I00, Ib, I01) %>%
 ITbl <- Sum_Tbl(x)
 
 x %>%
-  Plots(main = "Probability of Introduction")
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Introduction.png", width = 9, height = 5)
+  Plots(main = "Probability of Introduction") %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/Introduction.png", width = 9, height = 5)
 ITbl
 ```
 
@@ -357,9 +347,8 @@ x <- rbind(I00, Ib, I01) %>%
 
 DTbl <- Sum_Tbl(x)
 x %>%
-  Plots(main = "Probability of Detection") 
-#%>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/ProbDetection.png", width = 9, height = 5)
+  Plots(main = "Probability of Detection") %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/ProbDetection.png", width = 9, height = 5)
 DTbl
 ```
 
@@ -390,9 +379,8 @@ x <- rbind(I00, Ib, I01) %>%
 
 PPETbl <- Sum_Tbl(x)
 x %>% 
-  Plots('Effect of PPE') 
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/PPE.png", width = 9, height = 5)
+  Plots('Effect of PPE') %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/PPE.png", width = 9, height = 5)
 PPETbl
 ```
 
@@ -421,9 +409,8 @@ x <- rbind(I00, Ib, I01) %>%
 TFTbl <- Sum_Tbl(x)
 TFTbl
 x %>% 
-  Plots('Testing Frequency') 
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/TestingFreq.png", width = 9, height = 5)
+  Plots('Testing Frequency') %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/TestingFreq.png", width = 9, height = 5)
 ```
 
 
@@ -458,9 +445,8 @@ x <- rbind(I00, I01, I02) %>%
 VeTbl <- Sum_Tbl(x)
 
 x %>%
-  Plots('Vaccine Effect')
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/VaccinationEf.png", width = 9, height = 5)
+  Plots('Vaccine Effect') %>%
+  ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/VaccinationEf.png", width = 9, height = 5)
 VeTbl
 ```
 

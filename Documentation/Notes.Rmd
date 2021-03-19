@@ -295,11 +295,10 @@ This nursery home has 172 residents and 170 staff
     
   - Some people walk but not all. They try to keep them in the rooms. 
   - For each of the 17 beds assigned for isolation which have not been used, they are losing roughly 7,000 a month
-  
-  
-### NH Outbreak
-Hi Pablo – our model nursing home that we interviewed back in September had an outbreak: 42 infections of residents, 20 staff and 1 resident death.
+    
+# Interview update
 
+Hi Pablo – our model nursing home that we interviewed back in September had an outbreak: 42 infections of residents, 20 staff and 1 resident death.
     
 # NH Dynamics.  
 
@@ -350,10 +349,20 @@ The time between the onset of symptoms and hospitalization of index case was 5 d
 
 To approximate the transfer time to hospitalization we could use:  
 $$Hospitalization\ rate\times \frac{1}{t_h}$$
+  
+- Median number of days from symptom onset to hospitalization 4(1,9)  
+- Median number of days of hospitalization (ICU admissions) 12(6,20)  
+- Median number of days of hospitalization (Not ICU) 6(3,10)  
+- Time from exposure to symptom onset: 6
+
+
+
+
 ```{r}
 0.54*(1/5)
 
-range(rpois(100, 8))
+rpois(1000, 6.5) %>%
+  quantile()
 ```
 
 

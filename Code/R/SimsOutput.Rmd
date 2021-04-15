@@ -151,12 +151,6 @@ Sum_Tbl <- function(x){
 }
 ```
 
-```{r}
-x %>%
-  arrange(Sim)
-```
-
-
 
 # Test
 ```{r Test}
@@ -177,27 +171,6 @@ BTbl
 
 
 # Baseline
-
-| Name                     | Value              | Reference|
-|--------------------------|--------------------|----------|
-|Shedding probability      |    0.41            |          |
-|Transmission probability  |    0.41            |          |
-|Asymptomatic probability  |    0.25            |          |
-|Introduction probability  |    0.1             |          |
-|Test detection probability| $80\%$             | $^a$     |
-| Frequency of testing     |   Weekly           | $^a$     |
-| Proportion of Staff tested| $90\%$            | $^a$     |
-| Proportion of Residents tested| $33.3%$       | $^a$     |
-| PPE Effect ($OR_\pi$)    | 0.1467            |[@Chu2020]$^a$|
-| Proportion of Resident PPE| $95\%$            | $^a$     |
-| Proportion of Staff PPE  | $99\%$             | $^a$     |
-| Vaccine effect ($OR_\upsilon$)| 0.0493        |[@Pfizer2020]$^a$|
-| Vaccine effect ($OR_\upsilon$)| 0.0493        |[@Pfizer2020]$^a$|
-| Proportion of Resident Vaccine| $0\%$            | $^a$     |
-| Proportion of Staff Vaccine  | $0\%$             | $^a$     |
-| Vaccine immunity duration| $120\ days$        | $^a$         |
-|First dose effect        |     $60\%$          | $^a$         |
-
 
 ```{r}
 p <- "../../Data/SimsOut/Baseline/"
@@ -493,8 +466,8 @@ PlotScenarios <- function(x, v, main){
 ```{r}
 ColPal <- c("#C70704", "#BAB700", "#008C0C")
 p <- "../../Data/SimsOut/Scenarios/TF/"
-d <- list.files(p, full.names = T)
-DL <- lapply(d, function(x){
+d <- list.files(p)
+DL <- lapply(paste0(p,d), function(x){
   D <- ReadSims(x) %>%
     CycleSums(.) %>%
     .$cycle_TTE %>%
@@ -519,8 +492,8 @@ Sum_Tbl(DL)  %>%
 ```{r}
 ColPal <- c("#5C9669", "#6A918C", "#7280B3")
 p <- "../../Data/SimsOut/Scenarios/VE/"
-d <- list.files(p, full.names = T)
-DL <- lapply(d, function(x){
+d <- list.files(p)
+DL <- lapply(paste0(p,d), function(x){
   D <- ReadSims(x) %>%
     CycleSums(.) %>%
     .$cycle_TTE %>%
@@ -543,8 +516,8 @@ Sum_Tbl(DL) %>%
 ```{r}
 ColPal <- c("#414042", "#8C8700", "#5D0DB3")
 p <- "../../Data/SimsOut/Scenarios/VD/"
-d <- list.files(p, full.names = T)
-DL <- lapply(d, function(x){
+d <- list.files(p)
+DL <- lapply(paste0(p,d), function(x){
   D <- ReadSims(x) %>%
     CycleSums(.) %>%
     .$cycle_TTE %>%
@@ -561,317 +534,7 @@ PlotScenarios(x = DL, v = 'VaccineDistribution', main = "Vaccine Distribution") 
 Sum_Tbl(DL) %>%
   write.csv(., "../../Documentation/Tables/VD.csv", row.names = F)
 ```
+
 ```{r}
 Sum_Tbl(DL)
-```
-
-```{r}
-x %>%
-  ggplot() +
-  geom_boxplot(aes(y = InfectionRate, fill = eval(parse(text=v))), alpha = 0.6) +
-  scale_fill_manual(values = ColPal) +
-  facet_wrap(~cl) +
-  theme_minimal()+
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        strip.background = element_rect(colour="black",
-                                        fill="grey90")) +
-    ylab("Proportion of Infected") +
-    labs(fill = v)
-```
-
-
-## Scenarios High
-
-```{r}
-p <- "../../Data/SimsOut/Scenarios/High/"
-d <- list.files(p, full.names = T)
-DH <- lapply(d, function(x){
-  D <- ReadSims(x) %>%
-    CycleSums(.) %>%
-    .$cycle_TTE %>%
-    mutate(Scenario = factor(gsub(p, '', x), levels = c('HI_7', 'HI_5', 'HI_3', 'HI_Ee', 'HI_M', 'HI_P', 'HI_Ed', 'HI_R', 'HI_S')))
-}) %>%
-  do.call(rbind,.)
-ColPal <- rainbow(9, s = 0.6)
-
-Plots(DH, main = 'High Introduction') %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/High.png", width = 9, height = 6)
-Sum_Tbl(DH) %>%
-  write.csv(., "../../Documentation/Tables/ScenariosHigh.csv", row.names = F)
-```
-
-## Scenarios Med
-
-```{r}
-p <- "../../Data/SimsOut/Scenarios/Med/"
-d <- list.files(p, full.names = T)
-DM <- lapply(d, function(x){
-  D <- ReadSims(x) %>%
-    CycleSums(.) %>%
-    .$cycle_TTE %>%
-    mutate(Scenario = factor(gsub(p, '', x), levels = c('MI_7', 'MI_5', 'MI_3', 'MI_Ee', 'MI_M', 'MI_P', 'MI_Ed', 'MI_R', 'MI_S')))
-}) %>%
-  do.call(rbind,.)
-ColPal <- rainbow(9, s = 0.6)
-
-Plots(DM, main = 'Med Introduction') %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/Med.png", width = 9, height = 6)
-Sum_Tbl(DM) %>%
-  write.csv(., "../../Documentation/Tables/ScenariosMed.csv", row.names = F)
-```
-
-
-## Scenarios Low
-
-```{r}
-p <- "../../Data/SimsOut/Scenarios/Low/"
-d <- list.files(p, full.names = T)
-DL <- lapply(d, function(x){
-  D <- ReadSims(x) %>%
-    CycleSums(.) %>%
-    .$cycle_TTE %>%
-    mutate(Scenario = factor(gsub(p, '', x), levels = c('LI_7', 'LI_5', 'LI_3', 'LI_Ee', 'LI_M', 'LI_P', 'LI_Ed', 'LI_R', 'LI_S')))
-}) %>%
-  do.call(rbind,.)
-ColPal <- rainbow(9, s = 0.6)
-
-Plots(DL, main = 'Low Introduction') %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/Low.png", width = 9, height = 6)
-Sum_Tbl(DL) %>%
-  write.csv(., "../../Documentation/Tables/ScenariosLow.csv", row.names = F)
-```
-
-## Heatmap
-
-
-```{r}
-Hmp <- rbind(DH, DM, DL) %>%
-  mutate(S1 = gsub('_.*', '', Scenario),
-         S2 = gsub('.*_', '', Scenario)) %>%
-  group_by(S1, S2) %>%
-  summarise_at(.vars = c('Cumulative_I', 'H', 'InfectionRate'), .funs = median) %>%
-  mutate(S1 = recode(S1, HI = 'High', MI = 'Med', LI = "Low"),
-         S2 = recode(S2, '3' = '3-day testing', '5' = '5-day testing', '7' = '7-day testing', 'Ed' = 'Equal distribution', 'R' = 'Resident priority', 'S' = 'Staff priority', 'P' = 'Pfizer', 'M' = 'Moderna', 'Ee' = 'Equal effect'),
-         S1 = factor(S1, levels = c('Low', 'Med', 'High')),
-         S2 = factor(S2, levels = c('3-day testing', '5-day testing', '7-day testing', 'Equal distribution', 'Resident priority', 'Staff priority', 'Equal effect', 'Pfizer', 'Moderna'))) %>%
-  ggplot(aes(S1, S2, fill= InfectionRate)) + 
-  geom_tile() +
-  scale_fill_gradient2(low = 'blue2', mid = 'grey90', high = 'red2', midpoint = 0.02) +
-  theme_minimal() + xlab("") + ylab("") 
-
-Hmp %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/Heatmap.png")
-```
-
-
-________________________________________________________________________________________________
-
-
-
-```{r}
-p <- "../../Data/SimsOut/Scenarios/VE/"
-
-ColPal <- c("#5C9669", "#6A918C", "#7280B3")
-### Same vaccine effect for residents and staff
-D00 <- ReadSims(paste0(p, "Equal/"))
-S00 <- PlotCycles(D00, var = "I", col = "red3")
-I00 <- CycleSums(D00) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'Same vaccine effect')
-### Different vaccine effect for residents and staff (Pfizer)
-D01 <- ReadSims(paste0(p, "Pfizer/"))
-S01 <- PlotCycles(D01, var = "I", col = "red3")
-I01 <- CycleSums(D01) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'Pfizer')
-### Different vaccine effect for residents and staff (Pfizer)
-D02 <- ReadSims(paste0(p, "Moderna/"))
-S02 <- PlotCycles(D02, var = "I", col = "red3")
-I02 <- CycleSums(D02) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'Moderna')
-
-x <- rbind(I00, I01, I02) %>%
-  mutate(Scenario = factor(Scenario, levels = c('Same vaccine effect', 'Pfizer', 'Moderna'))) 
-
-VeTbl <- Sum_Tbl(x)
-
-x %>%
-  Plots('Vaccine Effect')
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/SensitivityAnalysis/VaccinationEf.png", width = 9, height = 5)
-VeTbl
-```
-
-
-
-```{r}
-p <- "../../Data/SimsOut/Scenarios/"
-
-ColPal <- c("#5C9669", "#6A918C", "#7280B3")
-### Same vaccine effect for residents and staff
-D00 <- ReadSims(paste0(p, "S01/"))
-S00 <- PlotCycles(D00, var = "I", col = "red3")
-I00 <- CycleSums(D00) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'Resident priority')
-### Different vaccine effect for residents and staff (Pfizer)
-D01 <- ReadSims(paste0(p, "S02/"))
-S01 <- PlotCycles(D01, var = "I", col = "red3")
-I01 <- CycleSums(D01) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'Staff priority')
-### Different vaccine effect for residents and staff (Pfizer)
-# D02 <- ReadSims(paste0(p, "Moderna/"))
-# S02 <- PlotCycles(D02, var = "I", col = "red3")
-# I02 <- CycleSums(D02) %>%
-#   .$cycle_TTE %>%
-#   mutate(Scenario = 'Moderna')
-
-x <- rbind(I00, I01) %>%
-  mutate(Scenario = factor(Scenario, levels = c('Resident priority', 'Staff priority'))) 
-
-VdTbl <- Sum_Tbl(x)
-VdTbl
-x %>%
-  Plots('Vaccine Distribution') %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/VaccineDist.png", width = 9, height = 5)
-```
-
-
-
-## Testing Frequency
-
-```{r}
-p <- "../../Data/SimsOut/Scenarios/TestingFreq/"
-ColPal <- c("#5C9669", "#6A918C", "#7280B3")
-### Same vaccine effect for residents and staff
-D00 <- ReadSims(paste0(p, "00/"))
-S00 <- PlotCycles(D00, var = "I", col = "red3")
-I00 <- CycleSums(D00) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = '7 days')
-### Different vaccine effect for residents and staff (Pfizer)
-D01 <- ReadSims(paste0(p, "01/"))
-S01 <- PlotCycles(D01, var = "I", col = "red3")
-I01 <- CycleSums(D01) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = '5 days')
-### Different vaccine effect for residents and staff (Pfizer)
-D02 <- ReadSims(paste0(p, "02/"))
-S02 <- PlotCycles(D02, var = "I", col = "red3")
-I02 <- CycleSums(D02) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = '3 days')
-
-rbind(I00, I01, I02) %>%
-  mutate(Scenario = factor(Scenario, levels = c('7 days', '5 days', '3 days'))) %>%
-  Plots('Testing Frequency') %>%
-  ggsave(filename = "../../Documentation/Figures/Scenarios/TestingFreq.png", width = 9, height = 5)
-```
-
-## Vaccine distribution
-
-### Low Community spread
-```{r Low spread}
-p <- "../../Data/SimsOut/Scenarios/VaccineDistrib/VaccineDistrib_01/"
-ColPal <- c("#5C9669", "#6A918C", "#7280B3")
-### Same vaccine effect for residents and staff
-D00 <- ReadSims(paste0(p, "00/"))
-S00 <- PlotCycles(D00, var = "I", col = "red3")
-I00 <- CycleSums(D00) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'I00')
-### Different vaccine effect for residents and staff (Pfizer)
-D01 <- ReadSims(paste0(p, "01/"))
-S01 <- PlotCycles(D01, var = "I", col = "red3")
-I01 <- CycleSums(D01) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'I01')
-### Different vaccine effect for residents and staff (Pfizer)
-D02 <- ReadSims(paste0(p, "02/"))
-S02 <- PlotCycles(D02, var = "I", col = "red3")
-I02 <- CycleSums(D02) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'I02')
-
-rbind(I00, I01, I02) %>%
-  mutate(Scenario = factor(Scenario, levels = c('I00', 'I01', 'I02'))) %>%
-  Plots("Vaccine Distribution Low Community Transmission")
-
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/Scenarios/VD_Low.png", width = 9, height = 5)
-```
-
-### Med Community Spread
-
-```{r Ve High spread}
-p <- "../../Data/SimsOut/Scenarios/VaccineDistrib/VaccineDistrib_05/"
-ColPal <- c("#5C9669", "#6A918C", "#7280B3")
-### Same vaccine effect for residents and staff
-D03 <- ReadSims(paste0(p, "00/"))
-S03 <- PlotCycles(D03, var = "I", col = "red3")
-I03 <- CycleSums(D03) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'I03')
-### Different vaccine effect for residents and staff (Pfizer)
-D04 <- ReadSims(paste0(p, "01/"))
-S04 <- PlotCycles(D04, var = "I", col = "red3")
-I04 <- CycleSums(D04) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'I04')
-### Different vaccine effect for residents and staff (Pfizer)
-D05 <- ReadSims(paste0(p, "02/"))
-S05 <- PlotCycles(D05, var = "I", col = "red3")
-I05 <- CycleSums(D05) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'I05')
-
-rbind(I03, I04, I05) %>%
-  mutate(Scenario = factor(Scenario, levels = c('I03', 'I04', 'I05'))) %>%
-  Plots("Vaccine Distribution High Community Transmission")
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/Scenarios/VD_High.png", width = 9, height = 5)
-```
-### High Community Spread
-
-```{r Ve Higher spread}
-p <- "../../Data/SimsOut/Scenarios/VaccineDistrib/VaccineDistrib_10/"
-ColPal <- c("#5C9669", "#6A918C", "#7280B3")
-### Same vaccine effect for residents and staff
-D03 <- ReadSims(paste0(p, "00/"))
-S03 <- PlotCycles(D03, var = "I", col = "red3")
-I03 <- CycleSums(D03) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'I03')
-### Different vaccine effect for residents and staff (Pfizer)
-D04 <- ReadSims(paste0(p, "01/"))
-S04 <- PlotCycles(D04, var = "I", col = "red3")
-I04 <- CycleSums(D04) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'I04')
-### Different vaccine effect for residents and staff (Pfizer)
-D05 <- ReadSims(paste0(p, "02/"))
-S05 <- PlotCycles(D05, var = "I", col = "red3")
-I05 <- CycleSums(D05) %>%
-  .$cycle_TTE %>%
-  mutate(Scenario = 'I05')
-
-rbind(I03, I04, I05) %>%
-  mutate(Scenario = factor(Scenario, levels = c('I03', 'I04', 'I05'))) %>%
-  Plots("Vaccine Distribution High Community Transmission")
-
-# %>%
-#   ggsave(filename = "../../Documentation/Figures/Scenarios/VD_High.png", width = 9, height = 5)
-```
-
-```{r}
-Nsim <- 30
-rbind(I00, I01, I02, I03, I04, I05) %>%
-  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s, 
-         InfectionRate = Cumulative_I/N,
-         HospRate = Cumulative_H/N) %>%
-  group_by(Scenario) %>%
-  summarise_at(.vars = c('InfectionRate', 'HospRate', 'day'), .funs = mean)
 ```

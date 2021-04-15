@@ -1,8 +1,17 @@
+##### R stuff ####
 .RData
 .Rhistory
-NH_COVID.Rproj
-Data
 .Rproj.user
-Documentation/References
+NH_COVID.Rproj
+Code/DataViz/
+#### DATA
+Data
+##### Documentation
+Documentation/
+Documentation/References/
+Documentation/Submission/
+#### GAMA stuff
+Code/NH_COVID/
 Code/NH_COVID/includes/
 Code/NH_COVID/.metadata/
+Code/NH_COVID/models/results/

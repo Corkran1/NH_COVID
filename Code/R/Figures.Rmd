@@ -1,0 +1,81 @@
+---
+title: "Title"
+author: "Pablo Gomez"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = F, message = F)
+library(dplyr); library(ggplot2); library(ggpubr);library(Pabloverse)
+library(sf)
+
+P <- list()
+```
+
+```{r}
+x <- read.csv('../../Data/CMS/COVID-19 Nursing Home Data 11.21.2021.csv')
+US <- raster::getData(name = 'GADM', country = 'USA', level = 1) %>% 
+  st_as_sf()
+
+USs <- US %>% 
+  mutate(State = gsub('US.', '', HASC_1)) %>% 
+  select(State) %>% 
+  rmapshaper::ms_simplify(keep = 0.01) %>% 
+  filter(!(State %in% c('AK', 'HI')))
+
+# object.size(US)
+# object.size(USs)
+# 
+# USs %>% 
+#   ggplot() +
+#   geom_sf()
+
+St <- x %>% 
+  filter(Week.Ending == '11/21/21') %>% 
+  group_by(Provider.State) %>% 
+  summarise_at(c('Residents.Total.Confirmed.COVID.19', 'Residents.Total.COVID.19.Deaths', 'Staff.Total.Confirmed.COVID.19', 'Staff.Total.COVID.19.Deaths'), ~sum(., na.rm = T))
+```
+
+```{r}
+USs <- USs %>% 
+  left_join(St, by = c('State' = 'Provider.State'))
+
+P[['Deaths']] <- USs %>% 
+  ggplot() +
+  geom_sf(aes(fill = Residents.Total.COVID.19.Deaths)) +
+  labs(fill = 'Cumulative resident deaths') +
+  theme_void() +
+  theme(legend.position = 'top') +
+  scale_fill_gradient(low = 'black', high = 'red')
+
+P$Deaths %>% 
+  ggsave(filename = '../../Documentation/Figures/Deaths.png')
+```
+
+
+```{r}
+P[['Res']] <- x %>% 
+  group_by(Week.Ending) %>% 
+  summarise_at(c('Residents.Weekly.COVID.19.Deaths', 'Residents.Weekly.Confirmed.COVID.19'), ~sum(., na.rm = T)) %>% 
+  mutate(week = as.Date(Week.Ending, format = '%m/%d/%y')) %>% 
+  filter(week != '2020-05-24') %>% 
+  select(-Week.Ending) %>% 
+  rename(Deaths = Residents.Weekly.COVID.19.Deaths, Confirmed = Residents.Weekly.Confirmed.COVID.19) %>% 
+  tidyr::gather(type, value, -week) %>% 
+  # arrange(week)
+  ggplot() +
+  geom_line(aes(x = week, y = value, col = type), lwd = 1) +
+  scale_color_manual(values = c('green4', 'red3')) +
+  labs(title = "Residents") +
+  Theme1() +
+  theme(legend.position = 'top')
+
+P$Res %>% 
+  ggsave(filename = '../../Documentation/Figures/Residents.png', width = 8.5, height = 3)
+```
+

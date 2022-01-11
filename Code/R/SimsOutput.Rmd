@@ -7,7 +7,8 @@ output: html_notebook
 
 ```{r}
 ### Libraries
-library(dplyr); library(ggplot2); library(ggpubr)
+library(dplyr); library(ggplot2); library(ggpubr);library(Pabloverse); library(sf)
+library(rpart); library(randomForest); library(caret)
 #Total population
 N <- 170 + 174
 # ==============================================================================
@@ -537,4 +538,260 @@ Sum_Tbl(DL) %>%
 
 ```{r}
 Sum_Tbl(DL)
+```
+
+# Version 2
+
+```{r Functions}
+###### For READING FILES ########
+# Function to read the sims
+# ---------------------------------------
+ReadSims <- function(d) {
+  f <- list.files(d, full.names = T)
+  D <- lapply(f, function(x) {
+    read.csv(x)
+  }) %>%
+    do.call(rbind, .)
+  return(D)
+}
+# Function to read the directories
+# ------------------------------------
+ReadDirs <- function(d){
+  dirs <- list.dirs(d, recursive = F)
+  Ld <- lapply(dirs, ReadSims)
+  names(Ld) <- gsub(d, '', dirs) %>%  gsub('([^A-z])', '', .)
+  return(Ld)
+}
+# Function to get the plots 
+# ----------------------------------
+RFCART <- function(data, f, main = '', seed = 1, palette  ='-RdYlGn'){
+  PL <- list()
+  
+  set.seed(seed)
+  # Split the data train/test
+  ind <- sample(2, nrow(data), replace = TRUE, prob = c(0.7, 0.3))
+  train <- data[ind==1,]
+  test <- data[ind==2,]
+  # Random Forest model fit
+  rf <- randomForest::randomForest(f, data=train, proximity=TRUE) 
+  print(rf)
+  
+  # Variable importance
+  PL[[2]] <- importance(rf) %>%
+    data.frame() %>% 
+    mutate(variable = rownames(.), RelImpt = IncNodePurity/sum(IncNodePurity)) %>%
+    ggplot(aes(x = reorder(variable, RelImpt), y = RelImpt)) +
+    geom_col() +
+    coord_flip() +
+    labs(x = '', y = 'Relative Importance', title = main) +
+    theme_minimal() +
+    theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16,face="bold"))
+  
+  # tr <- tree::tree(f, data=data)
+  # plot(tr); text(tr)
+  fit <- rpart(f, data=data, method = 'anova')
+  PL[[1]] <- rpart.plot::rpart.plot(fit, type = 4, box.palette = palette, branch.lty = 2)
+  
+  return(PL)
+}
+ICurveP <- function(x){
+  d$EC %>% 
+    mutate(day = floor(cycle/24)) %>%
+    # group_by(seed) %>% 
+    # mutate(L = n()) %>% ungroup() %>% mutate(mL = max(L), dL = mL - L) %>%  group_by(seed) %>% slice(c(1:n(),rep(n(), max(dL)))) %>% 
+    # ungroup() %>% arrange(seed, day) %>% 
+    group_by(day, {{x}}) %>% 
+    summarise(MeanCI = mean(Cumulative_I), MedianCI = median(I)) %>% 
+   ggplot() +
+  geom_line(aes(day, MeanCI, col = factor({{x}})), lwd = 0.5) +
+  Pabloverse::Theme1()
+}
+
+
+```
+
+
+```{r load the data}
+p <- "../GAMA_NHCOVID/NH_COVID/models/results/"
+d <- ReadDirs(p)
+Outcomes <- c('I', 'Cumulative_I', 'I_r', 'I_s')
+Var <- c('GlobalShedding_p', 'Introduction_p', 'TestingFreq', 'PPE_OR', 'Test_sensitivity', 'vaccination_dist', 'VaccineEff')
+```
+
+```{r}
+x <- unique(d$EC$PPE_OR)
+
+d$EC %>% 
+  filter(PPE_OR == x[2]) %>% #c('0.304', '0.380', '0.456')
+  group_by(cycle) %>% 
+  summarise_at(c('Cumulative_I'), .funs = ~mean(., na.rm = T)) %>% 
+  ggplot(aes(x = cycle)) +
+  geom_line(aes(y = Cumulative_I))
+```
+
+
+```{r}
+d$EC %>% 
+    mutate(day = floor(cycle/24)) %>% 
+    group_by(seed) %>% 
+    mutate(L = n()) %>% ungroup() %>% mutate(mL = max(L), dL = mL - L) %>%  group_by(seed) %>% slice(c(1:n(),rep(n(), max(dL)))) %>% 
+    ungroup() %>% arrange(seed, day) %>% 
+    group_by(day, GlobalShedding_p) %>% 
+    summarise(MeanCI = mean(Cumulative_I), MedianCI = median(I)) %>% 
+  arrange(GlobalShedding_p, day)
+   ggplot() +
+  geom_line(aes(day, MeanCI, col = factor(GlobalShedding_p)), lwd = 0.5) +
+  Pabloverse::Theme1()
+```
+
+
+```{r univar}
+ICurveP(GlobalShedding_p)
+ICurveP(TestingFreq)
+ICurveP(PPE_OR)
+ICurveP(VaccineEff)
+```
+
+```{r bivariate}
+d$EC %>% 
+  # filter(p2 == 1) %>% 
+    group_by(cycle, GlobalShedding_p, VaccineEff) %>% 
+    summarise(MeanCI = mean(Cumulative_I), MedianCI = median(Cumulative_I)) %>% 
+   ggplot() +
+  geom_line(aes(cycle, MeanCI, col = factor(VaccineEff)), lwd = 0.6) +
+  facet_wrap(~GlobalShedding_p, scales = 'free_y') +
+  Pabloverse::Theme1() +
+  theme(legend.position = 'top')
+```
+
+
+```{r}
+ds <- d$EC %>% 
+  # mutate_at(c('Cumulative_I', 'Cumulative_I_r','Cumulative_I_s', 'Cumulative_H', 'D'), .funs = ~./N) %>% 
+  ## THIS CHUNK IS TO REMOVE THE TAILS OF 95%
+  # group_by(seed) %>% 
+  # mutate(Cumulative_I_c = max(Cumulative_I)) %>% data.frame() %>%
+  # filter(Cumulative_I_c < quantile(Cumulative_I_c, probs = 0.95), Cumulative_I_c > quantile(Cumulative_I_c, probs = 0.05)) %>% data.frame() %>% 
+  group_by(seed, .dots=lapply(Var, as.symbol)) %>% 
+  summarise_at(c('Cumulative_I', 'Cumulative_I_r','Cumulative_I_s', 'Cumulative_H', 'D', 'LastInfection'), .funs = max) %>% 
+  ungroup() %>% 
+  mutate_at(.vars = Var, .funs = factor) %>%
+  mutate(LastInfection = (LastInfection/24)+7) %>% 
+  select(-seed)
+
+
+f1 <- Cumulative_I ~ GlobalShedding_p + Introduction_p + TestingFreq + PPE_OR + Test_sensitivity + vaccination_dist + VaccineEff
+f2 <- Cumulative_I_r ~ GlobalShedding_p + Introduction_p + TestingFreq + PPE_OR + Test_sensitivity + vaccination_dist + VaccineEff
+f3 <- Cumulative_I_s ~ GlobalShedding_p + Introduction_p + TestingFreq + PPE_OR + Test_sensitivity + vaccination_dist + VaccineEff
+f4 <- LastInfection ~ GlobalShedding_p + Introduction_p + TestingFreq + PPE_OR + Test_sensitivity + vaccination_dist + VaccineEff
+
+RFCART(f = f1 ,data = ds, main = 'Variable contribution for cumulative infected')
+RFCART(f = f2 ,data = ds, main = 'Variable contribution for cumulative infected (residents)')
+RFCART(f = f3 ,data = ds, main = 'Variable contribution for cumulative infected (staff)')
+RFCART(f = f4 ,data = ds, main = 'Variable contribution for las day of infection')
+```
+
+
+## Scenarios
+
+```{r}
+ScenarioSum <- function(scenario, var){
+  # scenario <- 'VacinationReplacement'; var = 'pInfected'
+  ds %>% 
+    mutate(Testing5 = ifelse(TestingFreq %in% c('3','5'), 1, 0),
+           Testing3 = ifelse(TestingFreq == '3', 1, 0)) %>% 
+    # mutate_at(.vars = scenarios, ~recode(., `Yes` = '1', `No` = '0')) %>% 
+    # mutate(VacTest = ifelse(VacinationReplacement == 1 & ReplacementTesting == 1, 1, 0),
+    #        ReplacementTesting = ifelse(ReplacementTesting == 1, 0, 1)) %>% 
+    group_by(eval(parse(text = scenario))) %>%
+  summarise(Var = mean(eval(parse(text = var)))) %>%
+    rename(scenario = `eval(parse(text = scenario))`) %>% 
+  tidyr::spread(data = ., key = scenario, Var) %>% 
+  mutate(S = scenario)
+}
+
+ScenarioSum(scenario = 'Testing3', var = 'Cumulative_I')
+```
+
+
+```{r}
+scenarios <- c('EmergencyVaccination', 'movement_restrictions', 'detection14', 'detection7', 'Culling')
+
+ScenarioSum <- function(scenario, var){
+  # scenario <- 'VacinationReplacement'; var = 'pInfected'
+  d %>% 
+    mutate(detection14 = ifelse(detection_effect == '14', 1, 0),
+           detection7 = ifelse(detection_effect == '7', 1, 0),
+           Culling = ifelse(CullingRate == '0', 1, 0)) %>% 
+    # mutate_at(.vars = scenarios, ~recode(., `Yes` = '1', `No` = '0')) %>% 
+    # mutate(VacTest = ifelse(VacinationReplacement == 1 & ReplacementTesting == 1, 1, 0),
+    #        ReplacementTesting = ifelse(ReplacementTesting == 1, 0, 1)) %>% 
+    group_by(eval(parse(text = scenario))) %>%
+  summarise(Var = mean(eval(parse(text = var)))) %>%
+    rename(scenario = `eval(parse(text = scenario))`) %>% 
+  tidyr::spread(data = ., key = scenario, Var) %>% 
+  mutate(S = scenario)
+}
+
+Ss <- lapply(scenarios, ScenarioSum, var = 'CumulativeInfected') %>% 
+  do.call(rbind, .) %>% 
+  rename(Yes = '1', No = '0')
+
+
+ Pr <- Ss %>%
+  mutate(Reduction = abs(round((1 - (Yes/No))*100, 2))) %>% 
+  # arrange(desc(`0`))
+  # filter(S == 'ConfirmatoryTesting') %>% 
+  ggplot(aes(x = S)) +
+  geom_bar(aes(y = No), alpha = 0.8, fill = 'red3', col = 'black', stat="identity", width = 0.5) +
+  geom_bar(aes(y = Yes), alpha = 0.6, fill = 'green', stat="identity", width = 0.48) +
+    geom_text(aes(y = No, label = paste0('-', Reduction, '%')), hjust = 3, col = 'grey90') +
+  coord_flip() +
+  Theme1() +
+  labs(y = '', x = '', title = 'Reduction of interventions in cumulative infected herds')
+ 
+Pr %>%
+  ggsave(filename = '../../Docs/Figures/Reduction.png', width = 8, height = 4)
+```
+
+
+
+```{r}
+scenarios <- c('ReplacementTesting', 'PigletVaccination', 'VacinationReplacement', 'HerdClosure')
+
+Ss <- lapply(scenarios, ScenarioSum, var = 'pInfected') %>% 
+  do.call(rbind, .) %>% 
+  mutate(var = 'Sow Cumulative incidence')
+
+Ss <- Ss %>% 
+  rbind(
+    lapply(scenarios, ScenarioSum, var = 'FarrowingMortality') %>% 
+  do.call(rbind, .) %>% 
+    mutate(var = 'Piglets Cumulative incidence')
+  )
+
+Ss <- Ss %>%
+  rbind(
+    lapply(scenarios, ScenarioSum, var = 'LastInfected') %>%
+  do.call(rbind, .) %>%
+    mutate(var = 'Time to elimination')
+  )
+
+Pr <- Ss %>%
+  mutate(Reduction = abs(round((1 - (Yes/No))*100, 2))) %>% 
+  # arrange(desc(`0`))
+  # filter(S == 'ConfirmatoryTesting') %>% 
+  ggplot(aes(x = S)) +
+  geom_bar(aes(y = No), alpha = 0.8, fill = 'red3', col = 'black', stat="identity", width = 0.5) +
+  geom_bar(aes(y = Yes), alpha = 0.6, fill = 'green', stat="identity", width = 0.48) +
+    geom_text(aes(y = No, label = paste0('-', Reduction, '%')), hjust = 3, col = 'grey90') +
+  coord_flip() +
+  facet_wrap(~var, scales = 'free_x') +
+  Theme1() +
+  labs(y = '', x = '', title = 'Reduction of interventions in outcomes analyzed')
+
+
+Pr 
+
 ```

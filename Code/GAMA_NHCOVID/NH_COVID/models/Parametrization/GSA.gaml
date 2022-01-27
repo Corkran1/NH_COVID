@@ -5,10 +5,7 @@
 * Tags: 
 */
 
-/*
- * ===========| BASELINE |=================
- */
-
+// ===========| BASELINE |=================
 model Parameters
 global{
 	/*======| Scenarios: |==========
@@ -17,10 +14,8 @@ global{
 	 * 2 = Vaccine effect according to @Polack202
 	 */
 	 int Scenario <- 0;
-	 
-	 
 	 // ===========| Disease Parameters |=========
-	 float GlobalShedding_p <- one_of(0.38, 0.38*0.8, 0.38*1.2); // Baseline 0.5(0.3, 0.7)
+	 float GlobalShedding_p <- one_of(0.35, 0.35*0.8, 0.35*1.2, 0.35*0.6, 0.35*1.4); // Baseline 0.5(0.3, 0.7)
 	 float GlobalInfection_p <- GlobalShedding_p; // Baseline 0.5(0.3, 0.7)
 	 float Asymptomatic_p <- 0.4; // Basleine 0.25
 	 float Introduction_p <- one_of(0.01, 0.05, 0.1); // Baseline 0.01(0.05, 0.1)
@@ -39,6 +34,4 @@ global{
 	 float vaccination_dist <- one_of(0.3, 0.5, 0.7); // proportion of doses for staff (for residents is 1 - p)
 	 int Vaccination_decay <- 120*24;
 	 float First_dose_effect <- 0.6; // the first dose effect will be scaled by this constant.
-	
-	
 }

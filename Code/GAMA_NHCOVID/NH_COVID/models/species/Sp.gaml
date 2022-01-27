@@ -32,12 +32,13 @@ species People skills:[moving]{
 	Rooms current_room;
 	bool is_active <- true;
 	string people_type;
+	float x_type <- people_type = 'resident' ? 1.0:0.7;
 	
 	//Disease parameters
 	float shedding_p; // shedding probability
 	float infection_p; // Infection probability
-	bool is_susceptible <- true; // Susceptible
-	bool is_infected; // Infected
+	bool is_susceptible update: !is_infected; // Susceptible
+	bool is_infected; // Infected (pe-syntomatic)
 	bool is_infectious; // Infectious
 	bool is_symptomatic; // Symptomatic
 	bool is_recovered; // Recovered 
@@ -45,6 +46,9 @@ species People skills:[moving]{
 	bool is_hospitalized; //Are they hospitalized in the same building??
 	bool is_isolated; // Isolated
 	float mortality <- BaseMortality;
+	
+	int infected_t update: is_infected ? infected_t + 1: infected_t;
+	int infected_days;
 	
 	// PPE
 	float PPE_e <- 1.0;
@@ -61,7 +65,7 @@ species People skills:[moving]{
 	int vaccine_doses;
 	
 	string infection_source;
-	int hospitalization_t; // time hospitalized 
+	int hospitalization_t update: is_hospitalized ? hospitalization_t + 1: 0; // time hospitalized 
 	int hospitalization_days; // hospitalization days
 	int max_hosp_days; // how many days will the resident spend in hospital?
 	People infection_agent;
@@ -69,28 +73,32 @@ species People skills:[moving]{
 	float hospitalization_p;
 	Rooms my_bedroom;
 	
-	
-	bool tested;
+	bool tested update: tested and testing_t > 14*24 ? false:tested;
+	int testing_t update: tested ? testing_t + 1 : 0; 
 	bool detected;
 	int latent_period;
 	
-	int infected_t update: is_infected ? infected_t + 1: infected_t;
-	int infected_days;
-	
 	//~~~~~~~~ Actions
 	action infect{
-		ask agents of_generic_species People at_distance infection_distance where(each.is_susceptible){
-			if flip(self.infection_p){
+		ask agents of_generic_species People at_distance infection_distance where(each.is_susceptible and !each.is_recovered){
+			if flip(self.infection_p*p1){
 				is_infected <- true;
 				is_susceptible <- false;
 				latent_period <-int(lognormal_trunc_rnd(3, 2, 2, 10));
+				write name + ' ' + latent_period + latent_period;
 				LastInfection <- cycle;
-				if ExportResults{
-					save [cycle, name, latent_period] to: "../results/" + "/LP/LatentP" + int(seed) +".csv" type:"csv" rewrite:false;
+				// Export infection 
+				string from <- myself.name;
+				string to <- self.name;
+				
+				if ExportNet{
+					save [from, to, seed, cycle, latent_period,
+						GlobalShedding_p, AsymptTransmission, Introduction_p, TestingFreq, Test_sensitivity, PPE_OR, Vaccination_OR_S, vaccination_dist, VaccineEff // Parameters
+					] to: "../results/" + S + "/N/InfNet" + int(seed) +".csv" type:"csv" rewrite:false;
 				}
 				infection_source <- "Facility";
 				max_hosp_days <- poisson(6.5); // how many days will the resident spend in hospital? (if hospitalized) !!! REPORT on the MODEL description
-				infection_agent <- myself;
+				
 				Cumulative_I <- Cumulative_I + 1;
 //				write string(myself) + " Infected " + self + ' at cycle:' + cycle;
 				if(self.people_type = 'staff'){
@@ -111,17 +119,18 @@ species People skills:[moving]{
 	reflex Disease_dynamics{
 		// update susceptibility
 		float odds_s <- GlobalShedding_p/(1-GlobalShedding_p); // compute the odds of the base probability of transmission [W]
+		
 		float shedding_o <- exp(ln(odds_s) + ln(PPE_OR)*x_PPE + ln(My_Vaccine_OR)*x_Vaccine);
 		shedding_p <-  shedding_o/(1 + shedding_o); //convert the odds to probability
+		shedding_p <- is_symptomatic ? shedding_p*AsymptTransmission*x_type: shedding_p*x_type; // Reduction in transmission for asymptomatic
 		
 		float odds_i <- GlobalShedding_p/(1-GlobalShedding_p); // compute the odds of the base probability of transmission
 		float infection_o <- exp(ln(odds_i) + ln(PPE_OR)*x_PPE + ln(My_Vaccine_OR)*x_Vaccine);
 		infection_p <-  infection_o/(1 + infection_o); //convert the odds to probability
 		
+		infection_p <- is_symptomatic ? infection_p*AsymptTransmission*x_type : infection_p*x_type;
 		// When infected
 		if is_infected{
-//			infected_t <- infected_t + 1;
-			
 			if infected_t > latent_period*24{ //  E -> I Transition
 				is_infectious <- true; // Becomes infectious
 				is_symptomatic <- flip(Asymptomatic_p); // is asymptomatic?
@@ -129,8 +138,7 @@ species People skills:[moving]{
 		}
 		
 		if is_infectious{
-//			infected_t <- infected_t + 1;
-			if flip(shedding_p) and is_active{
+			if flip(shedding_p*p1) and is_active{
 				do infect;
 			}
 			// ******State Transition I -> H
@@ -189,7 +197,6 @@ species People skills:[moving]{
 
 //=============Subspecies: Residents ============
 species Residents parent:People{
-	string people_type <- "resident";
 	bool attended;
 	int StaffInteractions;
 	bool hospitalized;
@@ -224,12 +231,12 @@ species Residents parent:People{
 			}
 		} if(Schedule = "Quiet Hours" and is_active){
 			current_room <- my_bedroom;
-			speed <- 0.001#m/#h;
+			speed <- 0.0#m/#h;
 		}
 		location <- any_location_in(current_room);
 		
 		// *** move from isolation back to room
-			if is_isolated and !is_infected{
+			if is_isolated and !is_infectious{
 //				my_bedroom <- first(Rooms where((each.Type = "Bedroom") and (length(each.CurrentRes) < 3)));
 				my_bedroom <- (Rooms where(each.Type = "Bedroom")) with_min_of(length(each.CurrentRes));
 				location <- my_bedroom.location;
@@ -241,7 +248,7 @@ species Residents parent:People{
 	// Hospitalization
 	reflex Hospitalization when:is_hospitalized{
 		hospitalized <- true;
-		hospitalization_t <- hospitalization_t + 1;
+//		hospitalization_t <- hospitalization_t + 1;
 		hospitalization_days <- int(hospitalization_t/24);
 		if hospitalization_days > max_hosp_days{
 			if flip(1 - mortality){
@@ -252,6 +259,7 @@ species Residents parent:People{
 				is_hospitalized <- false;
 			} else{
 				D <- D + 1;
+				my_bedroom.CurrentRes >- self; // remove self
 				do die;
 			}
 			
@@ -276,8 +284,9 @@ species Staff parent:People{
 	 bool at_community;
 	 int ResTurn;
 	 list<Residents> TargetRes;
+	 int isolation_t update: is_isolated ? isolation_t + 1: 0;
 	 
-	 
+ 
 	 reflex StaffSchedules{
 	 	if (current_date.hour between(7, 15) and schedule = 1){
 	 		is_active <- true;
@@ -289,8 +298,11 @@ species Staff parent:People{
 	 		is_active <- false;
 	 	}
 	 	
+	 	is_active <- is_isolated ? false:is_active;
+	 	is_isolated <- is_isolated and isolation_t > 15 ? false:is_isolated;
+	 		 	
 	 	// Go to community
-	 	if !is_active{
+	 	if !is_active and !at_community{
 	 		location <- any_location_in(geometry(community_shp));
 	 		at_community <- true;
 	 	} else if is_active and at_community{ // Return to the NH
@@ -302,10 +314,23 @@ species Staff parent:People{
 			location <- any_location_in(current_room);
 			ResTurn <- 0;
 			at_community <- false;
-			if flip(Introduction_p/100){
+			if flip(Introduction_p*infection_p) and is_susceptible and !is_recovered{
 				is_infected <- true;
+				latent_period <-int(lognormal_trunc_rnd(3, 2, 2, 10));
 				infection_source <- "Community";
-				Cumulative_I_s <- Cumulative_I_s + 1;
+				Introductions <- Introductions + 1;
+				write name + ' infected at community';
+//				Cumulative_I_s <- Cumulative_I_s + 1;
+				
+				// Export infection 
+				string from <- 'Community';
+				string to <- name;
+				
+				if ExportNet{
+					save [from, to, seed, cycle, latent_period,
+						GlobalShedding_p, AsymptTransmission, Introduction_p, TestingFreq, Test_sensitivity, PPE_OR, Vaccination_OR_S, vaccination_dist, VaccineEff // Parameters
+					] to: "../results/" + S + "/N/InfNet" + int(seed) +".csv" type:"csv" rewrite:false;
+				}
 			}
 	 	}
 	 }
@@ -330,10 +355,11 @@ species Staff parent:People{
 	 		attended <- true;
 	 		StaffInteractions <- StaffInteractions + 1;
 	 		// Staff to resident transmission
-	 		if myself.is_infectious and !self.is_infected{
-	 			if flip(myself.shedding_p){
-	 				if flip(self.infection_p){
+	 		if myself.is_infectious and !self.is_infected and !self.is_recovered{
+	 			if flip(myself.shedding_p*p1){
+	 				if flip(self.infection_p*p1){
 	 					self.is_infected <- true;
+	 					self.latent_period <-int(lognormal_trunc_rnd(3, 2, 2, 10));
 	 					infection_source <- 'staff';
 	 					Cumulative_I_r <- Cumulative_I_r + 1;
 //	 					write string(myself) + ' Infected ' + self + ' at cycle:' + cycle;
@@ -343,19 +369,30 @@ species Staff parent:People{
 	 		}
 	 		
 	 		// Resident to staff transmission
-	 		if self.is_infectious and !myself.is_infected{
+	 		if self.is_infectious and !myself.is_infected and !myself.is_recovered{
 	 			if self.is_isolated{ // assuming there is a correct use of PPE
-	 				if flip(self.shedding_p){
-	 					if flip(myself.infection_p/5){
+	 				if flip(self.shedding_p*p1){
+	 					if flip(myself.infection_p*p1){
 	 						myself.is_infected <- true;
+	 						myself.latent_period <-int(lognormal_trunc_rnd(3, 2, 2, 10));
 	 						Cumulative_I_s <- Cumulative_I_s + 1;
+	 						
+	 						// Export infection 
+							string from <- myself.name;
+							string to <- self.name;
+				
+							if ExportNet{
+								save [from, to, seed, cycle, latent_period,
+									GlobalShedding_p, AsymptTransmission, Introduction_p, TestingFreq, Test_sensitivity, PPE_OR, Vaccination_OR_S, vaccination_dist, VaccineEff // Parameters
+							] to: "../results/" + S + "/N/InfNet" + int(seed) +".csv" type:"csv" rewrite:false;
+				}
 	 					}
 	 					
 	 				}
 	 			} else if !self.is_isolated{
 	 				if flip(self.shedding_p*myself.infection_p){
-	 					myself.is_infected <- true;
-	 					Cumulative_I_s <- Cumulative_I_s + 1;
+//	 					myself.is_infected <- true;
+//	 					myself.latent_period <-int(lognormal_trunc_rnd(3, 2, 2, 10));Cumulative_I_s <- Cumulative_I_s + 1;
 	 				}
 	 			}
 	 			

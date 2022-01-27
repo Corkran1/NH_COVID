@@ -123,7 +123,6 @@ CVS <- read.csv('../../Data/SimsOut/CVS.csv')
 
 
 ```{r simulated outbreaks}
-
 d  %>%
   group_by(day, type) %>%
   summarise_at(.vars = c('CumI'), .funs = c(Median = median, Q25 = Q25, Q75 = Q75)) %>%
@@ -169,7 +168,7 @@ ggarrange(pR, pS, widths = c(5, 5), common.legend = T) %>%
 
 ## Using the median
 
-This approach uses only the median and we weould be loosing some information here, but I think is the easiest to interpret.  
+This approach uses only the median and we would be loosing some information here, but I think is the easiest to interpret.  
 
 I calculated the correlation between the median number of infected for the simulated and observed cases, and used a simple linear regression where: $Observed\sim Simulated$ and obtained the $R^2$.  
 
@@ -214,7 +213,7 @@ R2s <- lm(dms$observed$Is_cumsum~dms$simulated$Is_cumsum) %>%
 |Infected Staff    | `r pIs`|`r R2s`|
 
 
-## Using a simple linear regression fro individual observations.    
+## Using a simple linear regression for individual observations.    
 In the following two approaches we used all the observations (simulated and observed), so this could provide us a better insight, but I am not so sure if the model specification I am doing is correct.
 
 To calculate the $R^2$ we used model 

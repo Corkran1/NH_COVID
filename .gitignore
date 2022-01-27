@@ -1,3 +1,7 @@
+# if having problems with files that should be ignored but already in the repo use:
+# git rm -r --cached .
+# git add .
+
 .Rproj.user
 .Rhistory
 .RData
@@ -12,6 +16,9 @@ Code/R/misc/
 Code/NH_COVID/.cache/
 Code/NH_COVID/.metadata/
 Code/NH_COVID/externals/
+Code/GAMA_NHCOVID
+Code/GAMA_NHCOVID/NH_COVID/models/GSA/
+Code/GAMA_NHCOVID/NH_COVID/models/results/
 
 
 Code/GAMA_NHCOVID/.cache/

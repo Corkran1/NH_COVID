@@ -12,7 +12,8 @@
  */
 
 model NH01
-import 'Parametrization/GSA.gaml'
+//import 'Parametrization/GSA.gaml'
+import 'Parametrization/Baseline.gaml'
 //import 'Parametrization/SensitivityAnalysis/Detection/Low.gaml'
 //import 'Parametrization/Scenarios/VE/MI_M.gaml'
 import "species/Sp.gaml"
@@ -21,12 +22,13 @@ import "species/Interventions.gaml"
 global{
 	// Main settings:
 	bool ExportResults <- true;
-	float seed <- int(self) + 201.0;
-	int SimLength <- 150*3; //150 days (each step is 8 hrs or a staff turn)
-	int Days_free;
+	bool ExportNet <- false;
+	float seed <- int(self) + 3400.0;
+	int SimLength <- 150*24; //150 days
+	int Days_free update: (E_r) = 0 ? Days_free + 1: 0;
 	
 	date starting_date <- date([2020,1,1,7,0,0]);
-	float step <- 8#hour;
+	float step <- 1#hour;
 	int Day_hour;
 	// load files
 	file building_shp <- file("../includes/nh_building.shp");
@@ -72,20 +74,25 @@ global{
 	int Tests_r;
 	int Tests_s;
 	
+	int Introductions;
 	int Cumulative_I;
 	int Cumulative_I_r;
 	int Cumulative_I_s;
 	int Cumulative_H;
 	
 	// ~~~~~~~~~~~~~~~~~~~ || INTERVENTIONS || ~~~~~~~~~~~~~~~~~~~~	
-	bool ActiveSurv;
+	bool ActiveSurv <- true;
 	bool PassiveSurv;
-	bool R_Testing;
-	bool S_Testing;
+	bool R_Testing <- true;
+	bool S_Testing <- true;
 	bool Resident_Vaccination;
 	bool Staff_Vaccination;
+	int PassiveDet_s;
+	int ActiveDet_s;
+	int PassiveDet_r;
+	int ActiveDet_r;
 	// ~~~~~~PPE USE~~~~~~~
-	bool PPE_Use;
+	bool PPE_Use <- true;
 	float PPE_effect <- 0.0;
 	// ~~~~~~Vaccination~~~~~
 	int vaccination_freq <- 90; // when should another vaccination happen?
@@ -98,19 +105,18 @@ global{
 	
 	// initial conditions
 	init{
+		
+//		write 'Export results: ' + ExportResults;
+		write 'Introduction probability: ' + Introduction_p;
 		// Set the interventions according to scenarios
 		// Baseline conditions:
 		RecreationRestrictions <- true;
 		CD_Restriction <- true;
-		ActiveSurv <- true;
-		S_Testing <- true;
-		R_Testing <- true;
-		PPE_Use <- true;
 		
 		if VaccineEff = 'Equal'{
 			Vaccination_OR_S <- 0.0493;
 			Vaccination_OR_R <- 0.0493;
-		}else if VaccineEff = 'A'{
+		}else if VaccineEff = 'A'{ // Pfizer
 			Vaccination_OR_S <- 0.0619;
 			Vaccination_OR_R <- 0.0434;
 		}else if VaccineEff = 'B'{
@@ -124,6 +130,7 @@ global{
 		create Rooms from: rooms_shp{
 			if Type = "Bedroom"{
 				create Residents number:3{
+					people_type <- "resident";
 					My_Vaccine_OR <- Vaccination_OR_R;
 					my_bedroom <- myself;
 					current_room <- myself;
@@ -207,7 +214,7 @@ global{
 	}
 	
 	reflex Write_time{
-		write "Time: " + current_date;
+//		write "Time: " + current_date;
 		Schedule <- current_date.hour between(6,9) ? "Eating Time" : 
 		(current_date.hour between(8, 12) ? "Recreation Time" : 
 		(current_date.hour between(11, 13) ? "Eating Time" :
@@ -225,25 +232,29 @@ global{
 		}
 	}
 	
-	reflex SaveResults when: ExportResults and current_date.hour = 1{
-		save [seed, cycle, LastInfection, I, E, S_r, I_r, I_s, E_s, H, Cumulative_I, Cumulative_I_r, Cumulative_I_s, Cumulative_H, D, Tests_r, Tests_s, 
-			GlobalShedding_p, Introduction_p, TestingFreq, Test_sensitivity, PPE_OR, Vaccination_OR_S, vaccination_dist, VaccineEff
-		] to: "../results/" + "/EC/EpiCurve" + int(seed) +".csv" type:"csv" rewrite:false;
+	reflex SaveResults when: ExportResults and every(24#cycles){
+		write 'Exporting...';
+		float t <- machine_time;
+		save [t, seed, cycle, LastInfection, // Global 
+			I, E, S_r, I_r, I_s, E_r, E_s, H, Cumulative_I, Cumulative_I_r, Cumulative_I_s, Cumulative_H, D, Introductions, ActiveDet_s, ActiveDet_r, PassiveDet_s, PassiveDet_r, Tests_r, Tests_s, // Outcomes
+			GlobalShedding_p, AsymptTransmission, Introduction_p, TestingFreq, Test_sensitivity, SR_OR, PPE_OR, Vaccination_OR_S, vaccination_dist, VaccineEff // Parameters
+		] to: "../results/" + S + "/EC/EpiCurve" + int(seed) +".csv" type:"csv" rewrite:false;
 	}
 	
-	reflex StopSim when:cycle > SimLength{
-		do pause;
+	reflex StopSim when:cycle + 1 > SimLength{
+//		do pause;
 	}
 	
 	
 	
-	reflex DieOff when: (E_r + I_r + E_s + I_s) = 0{
+	reflex DieOff when: Days_free > 0{
 //		bool OutbreakEnded;
-		Days_free <- Days_free + 1;
+//		Days_free <- Days_free + 1;
 //		write 'E: ' + E_r + '||  I:' + I_r;
 		if Days_free > 24*7{
 //			OutbreakEnded <- true;
 			write "Outbreak ended at:" + cycle;	
+//			do pause;
 		}
 	}
 

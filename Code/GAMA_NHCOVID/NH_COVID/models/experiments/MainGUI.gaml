@@ -26,10 +26,11 @@ experiment MainGUI type:gui{
 			species Staff aspect: S_geom;
 			species Interventions;
 		}
-		display TS refresh: every(1 #cycles){
+		display TS refresh: every(24 #cycles){
 			chart "Epi Curve" type: series{
 //				data "Exposed Residents" style:line value:E_r color:#orange;
-				data "Infected Residents" style:line value:I_r color:#red;
+				data "Infected Residents" style:line value:I_r color:rgb(230, 50, 50);
+				data "Infected Staff" style:line value:I_s color:rgb(150, 50, 50);
 				data "Cumulative Infected" style:line value:Cumulative_I_r color:#darkred;
 //				data "Susceptible Residents" style:line value:S_r color:#green;
 			}
@@ -41,6 +42,3 @@ experiment MainGUI type:gui{
 
 experiment Batch type:batch repeat: 200 until: (Days_free > 24*7) or (cycle > SimLength){
 }
-
-/* Insert your model definition here */
-

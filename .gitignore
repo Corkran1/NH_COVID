@@ -10,8 +10,12 @@
 # Data
 Data/
 
-# Code
+# Documentation
+Documentation
+
+# R Code
 Code/R/misc/
+
 ## GAMA stuff
 Code/NH_COVID/.cache/
 Code/NH_COVID/.metadata/

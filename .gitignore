@@ -2,6 +2,9 @@
 # git rm -r --cached .
 # git add .
 
+# Global 
+misc
+
 # R stuff
 .Rproj.user
 .Rhistory
@@ -9,13 +12,9 @@
 .Ruserdata
 
 # Documentation
-Documentation/NH_COVID/
 Documentation/
 
-misc
-
 ## GAMA stuff
-Code/GAMA/misc/
 results
 .metadata
 .project

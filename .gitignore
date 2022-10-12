@@ -2,6 +2,7 @@
 # git rm -r --cached .
 # git add .
 
+# R stuff
 .Rproj.user
 .Rhistory
 .RData
@@ -21,19 +22,12 @@ misc
 ## GAMA stuff
 .cache
 .metadata
-#Code/NH_COVID/.cache/
-#Code/NH_COVID/.metadata/
-Code/NH_COVID/externals/
+externals
 Code/GAMA_NHCOVID
 Code/GAMA_NHCOVID/NH_COVID/models/GSA/
 Code/GAMA_NHCOVID/NH_COVID/models/results/
 
-
-Code/GAMA_NHCOVID/.cache/
-Code/GAMA_NHCOVID/.metadata/
-Code/GAMA_NHCOVID/.gama.epf
+.gama.epf
+#Code/GAMA_NHCOVID/.gama.epf
 Code/GAMA_NHCOVID/.gama_application_workspace
 Code/GAMA_NHCOVID/.built_in_models_1597176163533
-
-
-Documentation/misc/

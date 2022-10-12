@@ -1,5 +1,5 @@
 /**
-* Name: Parameters (BASELINE scenario)
+* Name: Parameters for GSA
 * Parameters for the model
 * Author: jpablo91
 * Tags: 

@@ -1,6 +1,6 @@
 /**
 * Name: NH01
-* Based on the internal empty template. 
+* This file contains the global parameters of the model
 * Author: jpablo91
 * Tags: 
 */

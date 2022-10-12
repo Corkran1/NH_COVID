@@ -11,14 +11,18 @@
 Data/
 
 # Documentation
-Documentation
+Documentation/
+
+misc
 
 # R Code
-Code/R/misc/
+# Code/R/misc/
 
 ## GAMA stuff
-Code/NH_COVID/.cache/
-Code/NH_COVID/.metadata/
+.cache
+.metadata
+#Code/NH_COVID/.cache/
+#Code/NH_COVID/.metadata/
 Code/NH_COVID/externals/
 Code/GAMA_NHCOVID
 Code/GAMA_NHCOVID/NH_COVID/models/GSA/

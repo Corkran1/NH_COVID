@@ -3,22 +3,15 @@ title: "Simulation Outputs"
 output: html_notebook
 ---
 
-Is this going to reset?
-
 # Setup
 
-```{r}
-### Libraries
+```{r Load libraries and functions}
+# Libraries --------------
 library(dplyr); library(ggplot2); library(ggpubr);library(Pabloverse); library(sf)
 library(rpart); library(randomForest); library(caret)
-#Total population
-N <- 170 + 174
-# ==============================================================================
-# FUNCTIONS
-# ==============================================================================
-###### For READING FILES ########
-# Function to read the sims
-# ---------------------------------------
+ 
+# FUNCTIONS --------------
+# Function to read the sims -------
 ReadSims <- function(d) {
   f <- list.files(d, full.names = T)
   D <- lapply(f, function(x) {
@@ -27,16 +20,14 @@ ReadSims <- function(d) {
     do.call(rbind, .)
   return(D)
 }
-# Function to read the directories
-# ------------------------------------
+# Function to read the directories --------------
 ReadDirs <- function(d){
   dirs <- list.dirs(d, recursive = F)
   Ld <- lapply(dirs, ReadSims)
   names(Ld) <- gsub(d, '', dirs) %>%  gsub('([^A-z])', '', .)
   return(Ld)
 }
-# Function for tables
-# -----------------------------------
+# Function for summary tables ---------------
 SumTbl <- function(d){
   d %>% 
     summarise_at(.vars = c('AtkRate', 'Cumulative_I', 'Cumulative_I_r', 'Cumulative_I_s', 'Cumulative_H', 'D', 'LastInfection'),
@@ -62,8 +53,7 @@ Tbl <- function(d, x){
     SumTbl() %>%
     select({{x}}, LastInfection:D) 
 }
-# Function to get the plots 
-# ----------------------------------
+# Function to get the plots -------------------
 RFCART <- function(data, f, main = '', seed = 1, palette  ='-RdYlGn'){
   PL <- list()
   
@@ -118,8 +108,7 @@ BoxPlot <- function(d, x, y, ColPal = 1:5) {
     scale_fill_manual(values = ColPal)
 }
 
-# Function for linear regresion estimates
-# ---------------------------------------
+# Function for linear regression estimates ---------------------------
 LmCI <- function(d, f, a = 0.05) {
   # fit the model
   m <- d %>%
@@ -137,14 +126,13 @@ LmCI <- function(d, f, a = 0.05) {
 }
 ```
 
-## Load the data
+## Load the simulations
 
 ```{r load the data}
-#Total population
-N <- 170 + 174
-p <- "../GAMA_NHCOVID/NH_COVID/models/results/GSA/"
-d <- ReadDirs(p)
-Outcomes <- c('I', 'Cumulative_I', 'I_r', 'I_s', 'Introductions', 'PassiveDet_s', 'ActiveDet_s', 'PassiveDet_r', 'ActiveDet_r')
+N <- 170 + 174 # Total population
+p <- "../GAMA_NHCOVID/NH_COVID/models/results/GSA/" # Directory for simulations
+d <- ReadDirs(p) # Read all the simulations
+Outcomes <- c('I', 'Cumulative_I', 'I_r', 'I_s', 'Introductions', 'PassiveDet_s', 'ActiveDet_s', 'PassiveDet_r', 'ActiveDet_r') 
 Var <- c('GlobalShedding_p', 'AsymptTransmission', 'Introduction_p', 'TestingFreq', 'detection_p', 'SR_OR', 'PPE_OR',  'vaccination_dist', 'VaccineEff')
 
 d$EC <- d$EC %>% 
@@ -178,6 +166,7 @@ d$EC %>%
   summarise(t = (max(t) - min(t))/(1000*60)) %>% 
   pull(t) %>% 
   mean()
+
 nrow(d$Cum)
 ```
 

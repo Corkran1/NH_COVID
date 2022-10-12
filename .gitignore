@@ -8,9 +8,6 @@
 .RData
 .Ruserdata
 
-# Data
-Data/
-
 # Documentation
 Documentation/
 
@@ -18,6 +15,7 @@ misc
 
 # R Code
 # Code/R/misc/
+Code/GAMA/
 
 ## GAMA stuff
 .cache

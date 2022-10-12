@@ -132,26 +132,24 @@ LmCI <- function(d, f, a = 0.05) {
 N <- 170 + 174 # Total population
 p <- "../GAMA_NHCOVID/NH_COVID/models/results/GSA/" # Directory for simulations
 d <- ReadDirs(p) # Read all the simulations
-Outcomes <- c('I', 'Cumulative_I', 'I_r', 'I_s', 'Introductions', 'PassiveDet_s', 'ActiveDet_s', 'PassiveDet_r', 'ActiveDet_r') 
-Var <- c('GlobalShedding_p', 'AsymptTransmission', 'Introduction_p', 'TestingFreq', 'detection_p', 'SR_OR', 'PPE_OR',  'vaccination_dist', 'VaccineEff')
+Outcomes <- c('I', 'Cumulative_I', 'I_r', 'I_s', 'Introductions', 'PassiveDet_s', 'ActiveDet_s', 'PassiveDet_r', 'ActiveDet_r') # Outcomes analyzed
+Var <- c('GlobalShedding_p', 'AsymptTransmission', 'Introduction_p', 'TestingFreq', 'detection_p', 'SR_OR', 'PPE_OR',  'vaccination_dist', 'VaccineEff') # Model parameters examined
+
 
 d$EC <- d$EC %>% 
-  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s, AtkRate = Cumulative_I / N, 
+  mutate(Cumulative_I = Cumulative_I_r + Cumulative_I_s, # Total infected (Staff + residents)
+         AtkRate = Cumulative_I / N, # Attack rate
          LastInfection = (LastInfection/24) + 0, # Add days of sickness (in average, fix this later in the model)
          detection_p = Test_sensitivity) %>% 
-  mutate_at(Var, factor) %>%
+  mutate_at(Var, factor) %>% # Convert all model parameters examined to factor
   mutate(Introduction_p = recode(as.character(Introduction_p), `0.01` = 'Low', `0.05` = 'Medium', `0.1` = 'High')) %>% 
-  # mutate(Introduction_p = recode(as.character(Introduction_p), `0.04` = 'Low', `0.05` = 'Medium', `0.06` = 'High'),
-  #        Introduction_p = factor(Introduction_p, levels = c('Low', 'Medium', 'High'))) %>% 
   data.frame()
 
+# Get the cumulative numbers for each simulation run
 d$Cum <- d$EC %>% 
   group_by(seed) %>% 
   slice(n()) %>% 
   data.frame()
-
-unique(d$EC$TestingFreq)
-d$Cum %>% count(Introduction_p)
 
 d$ECo <- d$EC %>% 
   group_by(seed) %>% 
@@ -166,7 +164,7 @@ d$EC %>%
   summarise(t = (max(t) - min(t))/(1000*60)) %>% 
   pull(t) %>% 
   mean()
-
+# Total simulations
 nrow(d$Cum)
 ```
 
@@ -189,22 +187,38 @@ ds %>%
 corrplot::corrplot(cor(ds))
 ```
 
+# Validation
+
+The model was calibrated and validated with data on confirmed COVID-19 cases reported between May 24, 2020, and February 14, 2021, in California nursing homes with similar resident census (between 150 and 200 occupied beds) extracted from the Centers for Medicare & Medicaid Services (CMS)
+
+```{r Prepare the data}
+# Load and filter the CMS data
+CMS_CA <- read.csv("../../Data/CMS/COVID-19_Nursing_Home_Dataset.csv") %>%
+  mutate(date = as.Date(Week.Ending, format = '%m/%d/%Y')) %>% # format the date
+  filter(Provider.State == "CA") # Filter to CA only
+
+# Data from interviewed NH
+CVS <- CMS_CA %>%
+  filter(Provider.Name == 'CLEAR VIEW SANITARIUM') %>%
+  arrange(date) %>%
+  filter(Residents.Total.Confirmed.COVID.19 > 0) %>% # filter only where > 1 infected
+  mutate(I = Residents.Total.Confirmed.COVID.19 + Staff.Total.Confirmed.COVID.19) %>% # Get total infected
+  select(Provider = Federal.Provider.Number, I, date, Ir_cumsum = Residents.Total.Confirmed.COVID.19, IS_cumsum = Staff.Total.Confirmed.COVID.19) %>% 
+  mutate(day = (date - first(date)) + 7)
+```
 
 
 ```{r Observed data}
-# Load and filter the CMS data
-CMS_CA <- read.csv("../../Data/CMS/COVID-19_Nursing_Home_Dataset.csv") %>%
-  mutate(date = as.Date(Week.Ending, format = '%m/%d/%Y')) %>% 
-  filter(Provider.State == "CA")
-
-range(CMS_CA$date)
+range(CMS_CA$date) # Range of dates
 
 # Format the data:
-CMSCA_ts <- CMS_CA %>% replace(is.na(.), 0) %>%
+CMSCA_ts <- CMS_CA %>% 
+  replace(is.na(.), 0) %>% # replace NAs with 0
+  # Select only relevant variables
   select(date, Provider = Federal.Provider.Number, Ir = Residents.Weekly.Confirmed.COVID.19, Is = Staff.Weekly.Confirmed.COVID.19, Dr = Residents.Weekly.COVID.19.Deaths, OccBeds = Total.Number.of.Occupied.Beds) %>%
-  arrange(Provider, date) %>%
-  group_by(Provider) %>%
-  mutate_at(.vars = c('Ir', 'Is', 'Dr'), .funs = c('cumsum', 'sum')) %>%
+  arrange(Provider, date) %>% # Sort by date and provider
+  group_by(Provider) %>% #group by provider
+  mutate_at(.vars = c('Ir', 'Is', 'Dr'), .funs = c('cumsum', 'sum')) %>% # Get cumulative numbers
   mutate(CumI = Ir_cumsum + Is_cumsum,
          TotalI = Ir_sum + Is_sum) %>%
   filter(CumI > 0) %>%
@@ -220,14 +234,7 @@ Obs <- CMSCA_ts %>% data.frame() %>%
   mutate(day = d, type = "observed") %>%
   select(day, CumI, type, Ir_cumsum, Is_cumsum, Sim = Provider)
 
-# Data from interviewed NH
-CVS <- CMS_CA %>%
-  filter(Provider.Name == 'CLEAR VIEW SANITARIUM') %>%
-  arrange(date) %>%
-  filter(Residents.Total.Confirmed.COVID.19 > 0) %>% 
-  mutate(I = Residents.Total.Confirmed.COVID.19 + Staff.Total.Confirmed.COVID.19) %>%
-  select(Provider = Federal.Provider.Number, I, date, Ir_cumsum = Residents.Total.Confirmed.COVID.19, IS_cumsum = Staff.Total.Confirmed.COVID.19) %>% 
-  mutate(day = (date - first(date)) + 7)
+
 
 Obs_s <- Obs %>% 
   group_by(day, type) %>% 
@@ -679,7 +686,7 @@ Ps[[2]]  %>%
 ```
 
 
-```{r Interactive version}
+```{r CART Interactive version}
 library(visNetwork)
 r <- rpart(formula = f1, data = dc)
 

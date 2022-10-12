@@ -14,19 +14,13 @@ Documentation/
 
 misc
 
-# R Code
-# Code/R/misc/
-Code/GAMA/
-
 ## GAMA stuff
-.cache
+Code/GAMA/misc/
+results
 .metadata
-externals
-Code/GAMA_NHCOVID
-Code/GAMA_NHCOVID/NH_COVID/models/GSA/
-Code/GAMA_NHCOVID/NH_COVID/models/results/
-
+.project
 .gama.epf
-#Code/GAMA_NHCOVID/.gama.epf
-Code/GAMA_NHCOVID/.gama_application_workspace
-Code/GAMA_NHCOVID/.built_in_models_1597176163533
+.gama_application_workspace
+.built_in_models_1597176163533
+.built_in_models_1656609883982
+NH_COVIDv2
